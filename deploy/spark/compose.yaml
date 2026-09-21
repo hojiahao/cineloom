@@ -9,7 +9,15 @@
 name: cineloom
 
 x-gpu: &gpu
-  runtime: nvidia
+  # DGX OS exposes the GPU through CDI (check: docker info | grep -i cdi). On hosts that
+  # register the legacy runtime instead, replace this block with `runtime: nvidia`.
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: cdi
+            device_ids: ["nvidia.com/gpu=all"]
+            capabilities: [gpu]
   ipc: host
   ulimits:
     memlock: -1
