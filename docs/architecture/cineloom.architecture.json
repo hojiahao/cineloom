@@ -13,7 +13,7 @@
           "label": "用户"
         },
         "backend": {
-          "label": "运行时"
+          "label": "CineLoom 运行时"
         },
         "frontend": {
           "label": "技能与界面"
@@ -35,85 +35,98 @@
       "id": "creator",
       "type": "external",
       "label": "创作者",
-      "sublabel": "创意 / 参考片",
+      "sublabel": "一句创意",
       "pos": [
-        330,
-        50
+        240,
+        40
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     },
     {
-      "id": "harness",
+      "id": "agents",
       "type": "backend",
-      "label": "DeepSeek Harness",
-      "sublabel": "导演智能体 · AGENTS.md",
+      "label": "子智能体",
+      "sublabel": "文案 · 审查 · 质检",
       "pos": [
-        330,
-        230
+        40,
+        170
       ],
       "size": [
-        180,
-        68
+        136,
+        52
+      ]
+    },
+    {
+      "id": "director",
+      "type": "backend",
+      "label": "导演智能体",
+      "sublabel": "cineloom direct",
+      "pos": [
+        240,
+        170
       ],
-      "brand": "deepseek"
+      "size": [
+        136,
+        52
+      ]
     },
     {
       "id": "nemotron",
       "type": "cloud",
       "label": "Nemotron 3.5",
-      "sublabel": "vLLM · NVFP4 · DSpark",
+      "sublabel": "NVIDIA · NVFP4",
       "pos": [
-        620,
-        230
+        440,
+        170
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     },
     {
       "id": "skills",
       "type": "frontend",
-      "label": "Agent Skills ×9",
+      "label": "Agent Skills",
       "sublabel": ".agents/skills",
       "pos": [
-        330,
-        400
+        240,
+        290
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     },
     {
       "id": "stepvl",
       "type": "cloud",
       "label": "Step3-VL-10B",
-      "sublabel": "StepFun · vLLM · FP8",
+      "sublabel": "StepFun · FP8",
       "pos": [
         40,
-        570
+        410
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     },
     {
       "id": "cli",
       "type": "backend",
       "label": "cineloom CLI",
-      "sublabel": "TypeScript · ffmpeg",
+      "sublabel": "TypeScript",
       "pos": [
-        330,
-        570
+        240,
+        410
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     },
     {
@@ -122,49 +135,50 @@
       "label": "ComfyUI",
       "sublabel": "Qwen-Image · Wan2.2",
       "pos": [
-        620,
-        570
+        440,
+        410
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     },
     {
       "id": "projects",
       "type": "database",
       "label": "projects/",
-      "sublabel": "state.json · 素材",
+      "sublabel": "state.json",
       "pos": [
-        330,
-        740
+        240,
+        530
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     },
     {
       "id": "studio",
       "type": "frontend",
       "label": "Studio 看板",
-      "sublabel": "成片 · 交付报告",
+      "sublabel": "成片 · 报告",
       "pos": [
-        620,
-        740
+        440,
+        530
       ],
       "size": [
-        180,
-        68
+        136,
+        52
       ]
     }
   ],
   "boundaries": [
     {
       "kind": "region",
-      "label": "NVIDIA DGX Spark · GB10 · 121.7 GB 统一内存",
+      "label": "NVIDIA DGX Spark · 121.7 GB 统一内存",
       "wraps": [
-        "harness",
+        "agents",
+        "director",
         "nemotron",
         "skills",
         "stepvl",
@@ -179,38 +193,53 @@
     {
       "id": "brief",
       "from": "creator",
-      "to": "harness",
+      "to": "director",
       "label": "需求",
       "variant": "emphasis",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelDy": 51
+      "labelDy": 39
+    },
+    {
+      "id": "delegate",
+      "from": "director",
+      "to": "agents",
+      "label": "委派"
     },
     {
       "id": "reasoning",
-      "from": "harness",
+      "from": "director",
       "to": "nemotron",
       "label": "规划"
     },
     {
+      "id": "copywriting",
+      "from": "agents",
+      "to": "stepvl",
+      "label": "中文",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 94
+    },
+    {
       "id": "load-skill",
-      "from": "harness",
+      "from": "director",
       "to": "skills",
-      "label": "按需加载",
+      "label": "加载",
       "variant": "emphasis",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelDy": 51
+      "labelDy": 34
     },
     {
       "id": "run-command",
       "from": "skills",
       "to": "cli",
-      "label": "调用命令",
+      "label": "调用",
       "variant": "emphasis",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelDy": 51
+      "labelDy": 34
     },
     {
       "id": "vision",
@@ -228,11 +257,11 @@
       "id": "record",
       "from": "cli",
       "to": "projects",
-      "label": "写入记录",
+      "label": "记录",
       "variant": "emphasis",
       "fromSide": "bottom",
       "toSide": "top",
-      "labelDy": 51
+      "labelDy": 34
     },
     {
       "id": "board",
@@ -247,8 +276,8 @@
       "dot": "cyan",
       "title": "智能体",
       "items": [
-        "一个导演按八个阶段推进",
-        "九个 Skill 封装各环节的专业判断",
+        "导演按八个阶段推进",
+        "子智能体各管一段",
         "审查方不能是产出方"
       ]
     },
@@ -258,7 +287,7 @@
       "items": [
         "Nemotron：规划与英文提示词",
         "Step3-VL：中文文案与看图质检",
-        "扩散模型按阶段加载，用完释放"
+        "扩散模型按阶段加载"
       ]
     },
     {

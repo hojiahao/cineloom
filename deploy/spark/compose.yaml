@@ -84,9 +84,12 @@ services:
   comfyui:
     <<: *gpu
     build:
-      context: ./comfyui
+      context: ../../runtime-data/ComfyUI
+      dockerfile: ../../deploy/spark/comfyui/Dockerfile
       args:
-        PYTORCH_IMAGE: ${PYTORCH_IMAGE:-nvcr.io/nvidia/pytorch:25.10-py3}
+        BASE_IMAGE: vllm/vllm-openai:${VLLM_TAG:-v0.27.1}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    image: cineloom/comfyui:local
     volumes:
       - ${SPARK_MODEL_DIR:-/home/orion/models}/comfyui:/opt/ComfyUI/models
       - ../../runtime-data/comfyui/output:/opt/ComfyUI/output
