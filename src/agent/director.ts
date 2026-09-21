@@ -179,13 +179,13 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
 
   // ---- frames + quality gate -------------------------------------------------------------
   const comfy = new ComfyClient()
-  await record('run', 'scheduler', undefined, { memoryBeforeFrames: await memoryStatus() })
   await setStage(brief.id, 'frames', 'running')
   await setStage(brief.id, 'qa', 'running')
+  await enterPhase(comfy, 'product hero (Qwen-Image)', record)
   // The hero still: one approved picture of the product that every shot is generated from,
   // so the can in shot 3 is the can in shot 1. A text description alone let it drift.
   await mkdir(join(dir, 'refs'), { recursive: true })
-  const heroShot: Shot = { shot: 0, seconds: 0, framing: 'product', camera: 'static', image_prompt: '', video_prompt: '', on_screen_text: '', must_show: `${storyboard.product}; the label must read "${brief.brandText}" cleanly` }
+  const heroShot: Shot = { shot: 0, seconds: 0, framing: 'product', camera: 'static', image_prompt: '', video_prompt: '', on_screen_text: '', must_show: `exactly one product container, upright and fully visible, whose label reads "${brief.brandText}" clearly and correctly. Finish, proportions and size are not judged here` }
   let hero: { path: string; verdict: QaVerdict } | undefined
   for (let attempt = 0; attempt <= MAX_QA_REGENERATIONS; attempt++) {
     const path = join(dir, 'refs', `product${attempt ? `_r${attempt}` : ''}.png`)
@@ -198,6 +198,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   }
   await addAsset(brief.id, { id: 'product-hero', kind: 'image', stage: 'frames', path: hero!.path.slice(dir.length + 1), execution: 'local-dgx-spark', model: 'qwen_image_lightning', note: `gate ${hero!.verdict.score}` })
 
+  await enterPhase(comfy, 'frames (Qwen-Image-Edit)', record)
   const frames = new Map<number, string>()
   for (const shot of storyboard.shots) {
     let prompt = composeImagePrompt(shot, storyboard, true)
@@ -208,7 +209,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
       const verdict = await qualityGate(reviewer, path, shot, hero!.path)
       log(`▸ frame ${shot.shot}      ${image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
       await record('qa', 'quality-gate', reviewer, { shot: shot.shot, attempt, imageSeconds: image.seconds, ...verdict })
-      if (!best || verdict.score > best.verdict.score) best = { path, verdict }
+      if (!best || verdict.score > best.verdict.score || (verdict.pass && !best.verdict.pass)) best = { path, verdict }
       if (verdict.pass) break
       if (attempt === MAX_QA_REGENERATIONS) break
       result.qaRegenerations++
@@ -217,7 +218,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
     frames.set(shot.shot, best!.path)
     await addAsset(brief.id, {
       id: `frame-${shot.shot}`, kind: 'image', stage: 'frames', path: best!.path.slice(dir.length + 1), shot: shot.shot,
-      execution: 'local-dgx-spark', model: 'qwen_image_edit_lightning', note: `gate ${best!.verdict.score}${best!.verdict.pass ? '' : ' (kept after failed gate)'}`,
+      execution: 'local-dgx-spark', model: 'qwen_image_edit_lightning', note: best!.verdict.score < 0 ? 'unverified: gate unavailable' : `gate ${best!.verdict.score}${best!.verdict.pass ? '' : ' (kept after failed gate)'}`,
     })
   }
   await setStage(brief.id, 'frames', 'done')
@@ -225,7 +226,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
 
   // ---- clips -----------------------------------------------------------------------------
   await setStage(brief.id, 'clips', 'running')
-  await record('run', 'scheduler', undefined, { memoryBeforeClips: await memoryStatus() })
+  await enterPhase(comfy, 'clips (Wan2.2)', record)
   for (const [index, shot] of storyboard.shots.entries()) {
     const output = join(dir, 'clips', `shot_${String(shot.shot).padStart(3, '0')}.mp4`)
     const clip = await generateVideo(comfy, {
@@ -264,23 +265,52 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   return result
 }
 
+/**
+ * Phase boundary on a machine with one memory pool: the two LLM services stay resident, but
+ * only one diffusion family should. Unload whatever the previous phase left in ComfyUI and
+ * record memory, which is the spark-model-scheduler skill carried out by the runtime.
+ */
+async function enterPhase(comfy: ComfyClient, phase: string, record: (stage: 'run', agent: string, endpoint: undefined, detail: Record<string, unknown>) => Promise<void>): Promise<void> {
+  const before = await memoryStatus()
+  await comfy.free()
+  await new Promise((resolve) => setTimeout(resolve, 3000))
+  await record('run', 'scheduler', undefined, { phase, availableBeforeGb: before.availableGb, availableAfterFreeGb: (await memoryStatus()).availableGb })
+}
+
+/**
+ * The gate must never take the film down with it. A failed verdict is retried with a larger
+ * budget; if the reviewer still cannot answer, the frame goes ahead marked unverified and the
+ * delivery record says so.
+ */
 async function qualityGate(reviewer: ModelEndpoint, frame: string, shot: Shot, productReference?: string): Promise<QaVerdict> {
+  for (const maxTokens of [3500, 6000]) {
+    try {
+      return await runGate(reviewer, frame, shot, productReference, maxTokens)
+    } catch {
+      // fall through to the larger budget
+    }
+  }
+  return { pass: true, score: -1, issues: ['quality gate unavailable: frame accepted unverified'] }
+}
+
+async function runGate(reviewer: ModelEndpoint, frame: string, shot: Shot, productReference: string | undefined, maxTokens: number): Promise<QaVerdict> {
   const run = await chatJson<QaVerdict>(
     reviewer,
     {
       system: 'You are the quality gate of an advertising studio. You did not write the prompt. Judge only what is visible, and be strict: a flawed frame costs six minutes of video generation.',
       images: productReference ? [frame, productReference] : [frame],
-      maxTokens: 3000,
+      // The local vision model reasons before it answers; too small a budget returns nothing at all.
+      maxTokens,
       temperature: 0,
       user: `Image 1 is the generated frame.${productReference ? ' Image 2 is the approved product reference.' : ''}
 The frame must show: ${shot.must_show}
 Reject (pass=false) if ANY of these is true:
 - the required content is missing;
-${productReference ? '- the product in image 1 differs from image 2 in container type, colours or label;\n' : ''}- there is ANY text outside the product label: captions, slogans, subtitles, numbers, lens specs, watermarks;
+${productReference ? '- the product in image 1 is a different product from image 2: another container type, other main colours, or different brand lettering. Ignore condensation, lighting, camera angle, reflections, scale and fine print - those are expected to change between shots;\n' : ''}- there is ANY text outside the product label: captions, slogans, subtitles, numbers, lens specs, watermarks;
 - any lettering is garbled, duplicated or nonsensical;
 - extra limbs, malformed hands or a distorted face;
 - the product is cropped, floating or physically implausible.
-Reply with JSON only: {"pass": boolean, "score": 0-100, "issues": ["short issue"]}. Pass requires score >= 80 and none of the reject conditions.`,
+Decide quickly; do not deliberate at length. Reply with JSON only: {"pass": boolean, "score": 0-100, "issues": ["short issue"]}. Pass requires score >= 80 and none of the reject conditions.`,
     },
     (verdict) => (typeof verdict.pass === 'boolean' && typeof verdict.score === 'number' ? [] : ['need boolean "pass" and numeric "score"']),
     2,

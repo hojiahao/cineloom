@@ -8,13 +8,14 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178c6">
   <img alt="Platform" src="https://img.shields.io/badge/platform-NVIDIA%20DGX%20Spark%20(GB10%20%C2%B7%20aarch64)-76b900">
   <img alt="Agent Skills" src="https://img.shields.io/badge/Agent%20Skills-9-d9b26a">
-  <img alt="Harness" src="https://img.shields.io/badge/harness-DeepSeek%20Harness-4d6bfe">
+  <img alt="Agents" src="https://img.shields.io/badge/agents-%E8%87%AA%E7%A0%94%E5%AF%BC%E6%BC%94%E8%BF%90%E8%A1%8C%E6%97%B6-4d6bfe">
 </p>
 
 <p align="center">
   <a href="#项目说明">项目说明</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#部署说明">部署说明</a> ·
+  <a href="#成片展示">成片展示</a> ·
   <a href="#agent-skills">Agent Skills</a> ·
   <a href="#技术栈说明">技术栈</a> ·
   <a href="#当前状态">当前状态</a>
@@ -55,11 +56,13 @@
 
 CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专业判断写成 **Agent Skill**：
 
-- **一个导演，九项技能。** [`AGENTS.md`](AGENTS.md) 定义导演智能体的流水线和底线规则；九个 Skill 分别封装需求澄清、脚本、合规、分镜、本地生成、质检、剪辑、拉片、内存调度的做法。Skill 是开放格式，换一个支持 Agent Skills 的客户端同样能用。
-- **先审后生成。** 文案必须先过合规扫描（`cineloom copy-check`，对照《广告法》的确定性规则，本地、可复现），有 `block` 级问题的文案到不了生成环节。
-- **先图后视频，中间有质检闭环。** 视频从过审的首帧生成；每张首帧由本地 StepFun 视觉模型对照产品参考图复核，不合格就按问题类型改提示词重生成，最多两次。把返工拦在几秒钟的生图阶段，而不是几分钟的生视频阶段。
-- **一个内存池里排兵布阵。** GB10 的 CPU 和 GPU 共用约 121 GB 统一内存。`spark-model-scheduler` 先量后排：两个 LLM 常驻，扩散模型按阶段加载、用完释放。
-- **过程对人可见。** 智能体每完成一个阶段就写入项目记录，[Studio 看板](#studio-看板) 实时显示阶段、每个素材的生成位置（本地 / 云端）、耗时和统一内存占用。
+- **一个导演，多个子智能体，九项技能。** `cineloom direct "一句创意"` 启动 CineLoom 自己的导演运行时：八个阶段由代码保证顺序，每个阶段交给一个加载了对应 Skill 的子智能体（需求、文案、审稿、分镜、质检）。**代码管顺序和验收，模型管判断**——每份产出先过确定性校验，不合格就带着具体问题重写。
+- **先审后生成。** 文案先过《广告法》用词扫描（本地、可复现），再交给一个“没写这份稿”的审稿智能体；有 `block` 级问题的文案到不了生成环节。
+- **产品定妆图锁定一致性。** 先生成一张产品定妆图并过质检，之后每个镜头都从这张图出发生成。只靠文字描述时，产品会在镜头之间漂移（实测：镜头 1 是青色罐，镜头 3 变成了银色罐）。
+- **画面里不让模型画字。** 标题和字幕在后期用真字体排版。实测模型会把“气泡细腻”画两遍，把风格词里的“50mm”当成文字画进画面，把生僻字“泠”画成“冷”。
+- **首帧过质检，才生成视频。** 本地 StepFun 视觉模型对照定妆图复核每一帧：内容缺失、多余文字、乱码、产品不符，任何一条都拒；被拒的帧按问题类型改提示词重生成，最多两次。把返工拦在 20 多秒的生图阶段，而不是 6 分钟的生视频阶段。
+- **一个内存池里排兵布阵。** GB10 的 CPU 和 GPU 共用约 121 GB 统一内存。两个 LLM 常驻；导演在每个阶段切换时释放上一阶段的扩散模型，再加载下一个。
+- **过程对人可见。** [Studio](#studio) 里输入创意、点“开拍”，实时看到每个阶段、每帧的质检结论、每个素材的生成位置和耗时，以及统一内存占用。
 
 ### 架构
 
@@ -71,19 +74,20 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 
 设计取舍：
 
-- **技能驱动命令行，而不是给框架写插件。** 每个 Skill 通过 `cineloom` 子命令做事，输入输出都是文件和 JSON。这样 Skill 不绑定某一个 Agent 框架，命令也能脱离智能体单独测试。
-- **模型按语言和任务分工。** Nemotron 的官方支持语言不含中文，但擅长规划、工具调用和英文提示词，恰好生图生视频的提示词就是英文；中文文案和看图交给 StepFun。
-- **记录即界面。** 看板只读 `projects/` 目录，不持有状态。智能体崩了重来，看板照常。
+- **分阶段导演，而不是放任模型自由循环。** 广告成片本来就是流水线；把顺序和验收交给代码，稳定、可测，“带 / 不带 Skill”的对比也能用同一套校验器打分。
+- **Skill 是开放格式，不绑定运行时。** 九个 Skill 通过 `cineloom` 子命令做事，输入输出都是文件和 JSON。CineLoom 自带导演运行时；同一批 Skill 也能被 Claude Code、Codex、DeepSeek Harness 等支持 Agent Skills 的客户端直接加载。
+- **模型按实测分工，不按想象分工。** Nemotron 关掉思考后 0.3 秒就能给出结构化结果，适合规划、文案、审稿和英文提示词；Step3-VL-10B 关不掉思考、约 18 token/秒，做长文本审稿会超时，但看图质检只要 10 秒左右——所以它只负责“看”。
+- **记录即界面。** Studio 只读 `projects/` 目录里的记录，不持有状态。
 
 ## 快速开始
 
 ```bash
 git clone git@github.com:hojiahao/cineloom.git && cd cineloom
 npm install && npm run build
-npm test                      # 16 个测试，含一条从立项到成片的端到端流程
+npm test                      # 23 个测试，含一条从立项到成片的端到端流程
 
-node dist/cli.js mem status   # 看统一内存
-node dist/cli.js studio       # 看板：http://127.0.0.1:3090
+node dist/cli.js studio       # 打开 http://127.0.0.1:3090 ，输入创意，点“开拍”
+node dist/cli.js direct "给一款叫“冷”的无糖气泡水做一条 15 秒竖版广告，面向大学生"   # 或者用命令行
 ```
 
 不需要 GPU 就能试的两个命令：
@@ -104,13 +108,9 @@ scripts/spark-up.sh                                            # 起 Nemotron、
 
 `spark-up.sh` 会先检查统一内存余量（默认要求 95 GB 可用，不足则拒绝启动，避免模型加载到一半被杀），起好三个服务后运行 `cineloom doctor`，把工作流模板和正在运行的 ComfyUI 逐节点对一遍，缺节点、缺权重当场报出来。
 
-然后让 DeepSeek Harness 接上本地模型，在本仓库目录里启动：
+三个服务就绪后，`cineloom direct` 和 Studio 就能用了。导演默认连本机的三个端口（Nemotron 8001、Step3-VL 8002、ComfyUI 8188），可用环境变量改：`CINELOOM_PLANNER_URL`、`CINELOOM_VISION_URL`、`COMFYUI_URL`。配置了 `STEPFUN_API_KEY` 时，文字审稿改由 StepFun 开放平台的 Step-3.7-Flash 承担，并在记录里标注 `cloud`；不配置则全程本地。
 
-```bash
-npx @deepseek-ai/dsh web      # 设置 → 模型 → 添加自定义提供方
-```
-
-两个提供方的写法见 [`deploy/spark/dsh-settings.example.yaml`](deploy/spark/dsh-settings.example.yaml)：协议选 `openai-completions`，地址分别是 `http://127.0.0.1:8001/v1`（Nemotron）和 `http://127.0.0.1:8002/v1`（Step3-VL）。Harness 会自动发现 `.agents/skills/` 下的全部 Skill 和根目录的 `AGENTS.md`。该配置同时关闭了 Harness 默认开启的会话日志上传。
+这台机器上踩过的坑都已写进配置：Docker 通过 CDI（`nvidia.com/gpu=all`）而不是 `runtime: nvidia` 暴露 GPU；Step3-VL 的 FP8 权重要设 `VLLM_USE_DEEP_GEMM=0`；ComfyUI 镜像直接建在 vLLM 镜像上，复用已在 GB10 上验证过的 PyTorch。
 
 ### 2. 如何优化大模型
 
@@ -120,9 +120,11 @@ npx @deepseek-ai/dsh web      # 设置 → 模型 → 添加自定义提供方
 | 投机解码 | 搭配官方 `-DSpark` 草稿权重，`num_speculative_tokens=3` | NVIDIA 为 DGX Spark 低并发场景调优的方案，无损加速 |
 | FP8 KV cache 与前缀缓存 | `--kv-cache-dtype fp8 --enable-prefix-caching` | 导演智能体每轮都带同一段系统提示和 Skill，前缀命中率高 |
 | FP8 视觉模型 | Step3-VL-10B-FP8，15.1 GB；设 `VLLM_USE_DEEP_GEMM=0` | 质检要常驻，体积必须小。DeepGEMM 的 FP8 内核在 GB10 上断言失败，改走 vLLM 通用 FP8 路径 |
-| 8 步蒸馏 LoRA | Qwen-Image + Lightning 8-step，cfg 1 | 把单张首帧压到可以反复重生成的量级 |
+| 8 步蒸馏 LoRA | Qwen-Image + Lightning 8-step，cfg 1 | 单张 1080×1920 首帧实测 22.7 秒，质检重生成才负担得起 |
+| 14B 视频模型 + 4 步蒸馏 | Wan2.2 I2V A14B（FP8，高噪/低噪两个专家）+ lightx2v 4-step LoRA | 实测 353 秒一段，不比 5B 模型（365 秒）慢，画面明显更好，因此设为默认 |
+| 按任务开关思考 | 脚本、分镜、审稿关闭 Nemotron 的思考模式 | 开着时会把整个 token 额度用在推理上、正文为空；关掉后 0.3 秒出结构化结果，由校验器和重试兜底 |
 | 原生分辨率预算 | 超过 1328×1328 像素总量的请求先按预算生成再放大 | 扩散耗时随像素数增长，预算内生成、Lanczos 放大 |
-| 分阶段显存调度 | vLLM 按总内存池比例预占（0.25 + 0.20），扩散模型按需加载，视频阶段结束调用 ComfyUI `/free` | 一个内存池，先常驻后按需 |
+| 分阶段显存调度 | vLLM 按总内存池比例预占（0.25 + 0.20）；导演在定妆图、首帧、视频三个阶段切换时调用 ComfyUI `/free` | 三个扩散模型同时留在内存里会让 GPU 驱动分配失败（实测发生过），一次只留一族 |
 
 **本机实测（2026-09-21，DGX Spark，单请求）**
 
@@ -135,6 +137,11 @@ npx @deepseek-ai/dsh web      # 设置 → 模型 → 添加自定义提供方
 | Step3-VL-10B KV cache（内存比例 0.20） | 47,616 token，32K 上下文可用 |
 | 两个 LLM 同时常驻后的可用统一内存 | 47.6 GB |
 | `cineloom qa` 单张首帧质检 | 首次 26 s（含预热），之后 10 s |
+| Qwen-Image 首帧 1080×1920（8 步） | 首次 45.8 s（含加载），之后 22.7 s |
+| Wan2.2 TI2V-5B，5 秒 720p 竖版片段 | 365 s |
+| Wan2.2 I2V A14B + 4 步 LoRA，5 秒 720p 竖版片段 | 353 s |
+| 导演方案阶段（需求 → 脚本 → 合规 → 分镜） | 157 s（旧版，含一次失败的审稿）；关掉思考后脚本 5.5 s、分镜 4.3 s |
+| 第一支端到端成片（旧流水线，5B 视频模型，15 秒 3 镜头，质检重生成 4 次） | 1453 s |
 
 Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太小时正文会为空。
 
@@ -162,9 +169,22 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | [`final-cut-assembly`](.agents/skills/final-cut-assembly/SKILL.md) | 成片 | 统一规格拼接、字幕、配乐、交付报告 | `cineloom cut` · ffmpeg |
 | [`spark-model-scheduler`](.agents/skills/spark-model-scheduler/SKILL.md) | 贯穿 | 统一内存先量后排，分阶段加载释放 | `cineloom mem` |
 
-## Studio 看板
+### 带 Skill 和不带 Skill 的差别
 
-`node dist/cli.js studio` 在 `http://127.0.0.1:3090` 提供只读看板：每个项目的八个阶段状态、按镜头排列的首帧和片段、每个素材的生成位置与实测耗时、成片播放，以及统一内存占用条。对话与技能调用过程在 DeepSeek Harness 的 Web 界面里看。
+同一个 Nemotron、同一批 8 个创意各跑 2 轮，唯一变量是子智能体的系统提示里有没有对应的 Skill。每个阶段只给一次机会，用导演自己的校验器（[`src/agent/checks.ts`](src/agent/checks.ts)）数违规条数。
+
+| | 不带 Skill | 带 Skill |
+|---|---:|---:|
+| 脚本一次合格 | 0/16 | 6/16 |
+| 脚本平均违规数 | 3.63 | 1.06 |
+| 分镜一次合格 | 0/16 | 8/14 |
+| 分镜平均违规数 | 8.00 | 0.71 |
+
+不带 Skill 时最常见的错误：用中文写图片提示词（35 次）、一个镜头塞多个运镜（29 次）、字幕超长（22 次）、节拍数不对（12 次）、风格词里带数字（10 次）——每一条都会直接毁掉成片。带 Skill 后仍有残留问题（口播偏短、偶尔中文提示词），已反馈进 Skill 文本。校验器查的是形式，不是文案好坏；这次评测与成片任务并行，耗时数字不可信，未列出。完整报告：[脚本](.agents/skills/ad-script-writing/BENCHMARK.md) · [分镜](.agents/skills/storyboard-design/BENCHMARK.md) · [原始数据](eval/results/ablation.json)。复现：`cineloom eval --repeats 2`。
+
+## Studio
+
+`node dist/cli.js studio` 在 `http://127.0.0.1:3090` 提供工作台：输入创意、选画幅时长和视频模型、点“开拍”，导演就在后台开工（一次只拍一支，GPU 只有一块）。页面实时显示运行日志、八个阶段的状态、按镜头排列的首帧和片段、每个素材的生成位置与实测耗时、成片播放，以及统一内存占用条。
 
 ## 技术栈说明
 
@@ -191,27 +211,28 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 
 | 组件 | 用途 |
 |---|---|
-| [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（MIT） | Agent 运行时：Skill 发现与加载、子智能体、Web 界面 |
 | vLLM | 两个 LLM 的 OpenAI 兼容服务 |
 | ComfyUI · Qwen-Image / Qwen-Image-Edit-2509（含 Lightning 8-step LoRA） | 首帧生成；带产品参考图的生成；能渲染中文字 |
-| ComfyUI · Wan2.2 TI2V-5B | 首帧驱动的 5 秒片段生成 |
-| ffmpeg | 参考片切镜、尾帧续接、成片合成 |
-| TypeScript · Node.js 22 · Vitest | CLI、看板与测试 |
+| ComfyUI · Wan2.2 I2V A14B（FP8）+ lightx2v 4-step LoRA | 默认视频模型：首帧驱动的 5 秒片段 |
+| ComfyUI · Wan2.2 TI2V-5B | 备选视频模型，支持无首帧的文生视频 |
+| ffmpeg · libass | 参考片切镜、尾帧续接；成片的转场、调色、颗粒、暗角和真字体标题字幕 |
+| TypeScript · Node.js 22 · Vitest | 导演运行时、CLI、Studio 与测试（零运行时依赖） |
+| [archify](https://github.com/tt-a1i/archify) | 架构图 |
 
 ## 当前状态
 
 如实记录，随开发更新。
 
-- [x] `cineloom` CLI 全部 10 个子命令，16 个测试通过；端到端测试走真实 ffmpeg，ComfyUI 用桩服务
-- [x] 在本机 DGX Spark 上实测：`mem status` / `mem plan`、参考片切镜、合规扫描、Studio 看板
-- [x] 9 个 Skill 与 20 条评测任务；Nemotron、DSpark 权重已下载
-- [x] Nemotron 与 Step3-VL 已在本机 DGX Spark 上由 vLLM 真实启动；全部权重（约 109 GB）已下载
-- [x] `cineloom qa` 在本地 Step3-VL 上真实跑通：符合要求的图 90 分通过，不符合的 30 分拒绝并指出缺失内容
-- [ ] 启动 ComfyUI 并通过 `cineloom doctor`
-- [ ] DeepSeek Harness 经自定义提供方接本地模型的完整链路
-- [ ] 第一支真实成片，以及每个阶段的实测耗时和峰值内存
-- [ ] “带 / 不带 Skill”对比评测，结果写入各 Skill 的 `BENCHMARK.md`
-- [ ] 演示视频（B 站）与“十日谈”开发历程
+- [x] 自研导演运行时 `cineloom direct`：一句创意到成片，八个阶段、多个子智能体，全部在本机
+- [x] Nemotron、Step3-VL、ComfyUI 三个服务在同一台 DGX Spark 上常驻运行；全部权重（约 140 GB）已下载
+- [x] 第一支端到端成片（旧流水线）：1453 秒；质检闭环真实触发 4 次重生成
+- [x] 新流水线：产品定妆图锁定、画面无字、严格质检、14B 视频模型、电影化后期
+- [x] Studio 工作台：网页提交创意、实时进度
+- [x] “带 / 不带 Skill”对比评测与两份 `BENCHMARK.md`
+- [x] 23 个测试通过，端到端测试走真实 ffmpeg
+- [ ] 配音、音乐与音效（目前成片无声）
+- [ ] 每镜头多候选选优
+- [ ] 演示视频（B 站）与“十日谈”发布
 
 本仓库不会出现未经实测的性能数字。
 
@@ -220,13 +241,15 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 ```text
 AGENTS.md                导演智能体的流水线与规则
 .agents/skills/          9 个 Agent Skill（SKILL.md · references · evals）
-src/                     cineloom CLI 与 Studio 看板（TypeScript）
+src/agent/               导演运行时：子智能体、校验器、评测
+src/                     cineloom CLI、媒体管线与 Studio（TypeScript）
 workflows/               ComfyUI API 格式的工作流模板
 deploy/spark/            本地推理栈（compose）、Harness 提供方配置
 scripts/                 模型下载、一键启动
+eval/                    评测用创意与原始结果
 tests/                   单元测试与端到端流水线测试
 ```
 
 ## 致谢与许可
 
-CineLoom 以 [MIT 许可证](LICENSE) 发布，版权归方舟团队所有。运行时依赖 DeepSeek Harness、vLLM、ComfyUI，以及 NVIDIA、StepFun、Qwen、Wan 团队开源的模型，各自遵循其许可证。用 CineLoom 生成并对外发布的内容，请按平台规范标注“AI 生成”。
+CineLoom 以 [MIT 许可证](LICENSE) 发布，版权归方舟团队所有。运行时依赖 vLLM、ComfyUI，以及 NVIDIA、StepFun、Qwen、Wan 团队开源的模型，各自遵循其许可证。用 CineLoom 生成并对外发布的内容，请按平台规范标注“AI 生成”。

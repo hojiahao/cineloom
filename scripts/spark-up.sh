@@ -15,6 +15,13 @@ if [ "$available_gb" -lt "$required_gb" ]; then
   exit 1
 fi
 
+# The ComfyUI image is built from a local checkout (see deploy/spark/comfyui/Dockerfile).
+if [ ! -d runtime-data/ComfyUI/.git ]; then
+  mkdir -p runtime-data
+  git clone --depth 1 https://github.com/comfyanonymous/ComfyUI runtime-data/ComfyUI
+fi
+mkdir -p runtime-data/comfyui/output runtime-data/comfyui/input
+
 compose=(docker compose -f deploy/spark/compose.yaml --env-file deploy/spark/spark.env)
 "${compose[@]}" up -d --build "$@"
 

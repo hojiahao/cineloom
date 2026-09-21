@@ -104,3 +104,83 @@ export async function runAblation(briefsPath: string, output: string, repeats: n
   await writeFile(output, JSON.stringify(report, null, 2))
   return { withSkills: report.withSkills, withoutSkills: report.withoutSkills, output }
 }
+
+interface StoredReport {
+  date: string
+  model: string
+  briefs: number
+  repeats: number
+  method: string
+  rows: Array<{ brief: string; repeat: number; withSkills: ArmResult; withoutSkills: ArmResult }>
+}
+
+/** Turn a stored comparison into one BENCHMARK.md per evaluated skill, so every number traces back to the JSON. */
+export async function writeBenchmarks(reportPath: string, skillsRoot = '.agents/skills'): Promise<string[]> {
+  const report = JSON.parse(await readFile(reportPath, 'utf8')) as StoredReport
+  const stages = [
+    { skill: 'ad-script-writing', count: (arm: ArmResult) => arm.scriptViolations, problems: (arm: ArmResult) => arm.scriptProblems },
+    { skill: 'storyboard-design', count: (arm: ArmResult) => arm.storyboardViolations, problems: (arm: ArmResult) => arm.storyboardProblems },
+  ]
+  const written: string[] = []
+  for (const stage of stages) {
+    const stats = (pick: (row: StoredReport['rows'][number]) => ArmResult) => {
+      const arms = report.rows.map(pick).filter((arm) => !stage.problems(arm).some((problem) => problem.startsWith('skipped')))
+      const total = arms.reduce((sum, arm) => sum + stage.count(arm), 0)
+      const tally = new Map<string, number>()
+      for (const arm of arms) for (const problem of stage.problems(arm)) {
+        const key = problem.replace(/^(beat|shot) \d+: /, '').replace(/\d+ characters/g, 'N characters').replace(/has only N/, 'has only N').slice(0, 90)
+        tally.set(key, (tally.get(key) ?? 0) + 1)
+      }
+      return { runs: arms.length, clean: arms.filter((arm) => stage.count(arm) === 0).length, mean: Math.round((total / arms.length) * 100) / 100, top: [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6) }
+    }
+    const withSkill = stats((row) => row.withSkills)
+    const without = stats((row) => row.withoutSkills)
+    const percent = (part: number, whole: number) => `${Math.round((part / whole) * 100)}%`
+    const list = (items: Array<[string, number]>) => (items.length ? items.map(([text, count]) => `| ${count} | ${text} |`).join('\n') : '| 0 | none |')
+    const body = `# Skill Benchmark: ${stage.skill}
+
+Baseline versus skill on the same model and the same briefs. The only variable is whether the
+agent's system prompt contains this skill. Each run gets **one attempt** and is scored by the
+validators in \`src/agent/checks.ts\` - the same code the director uses to accept or reject work -
+so a violation is a rule the retry loop would otherwise have to clean up.
+
+## Evaluation metadata
+
+- Date: ${report.date.slice(0, 10)}
+- Model: \`${report.model}\` served locally by vLLM on one DGX Spark (GB10), thinking off
+- Briefs: ${report.briefs} advertising requests in \`eval/briefs.json\`, ${report.repeats} runs each
+- Raw data: \`${reportPath}\` · Reproduce: \`cineloom eval --repeats ${report.repeats} && cineloom eval --report-only\`
+
+## Results
+
+| Measure | Baseline (no skill) | With skill |
+|---|---:|---:|
+| Runs scored | ${without.runs} | ${withSkill.runs} |
+| Clean on the first attempt | ${without.clean}/${without.runs} (${percent(without.clean, without.runs)}) | ${withSkill.clean}/${withSkill.runs} (${percent(withSkill.clean, withSkill.runs)}) |
+| Mean rule violations per run | ${without.mean} | ${withSkill.mean} |
+
+### Most frequent violations without the skill
+
+| Count | Violation |
+|---:|---|
+${list(without.top)}
+
+### Violations that remain with the skill
+
+| Count | Violation |
+|---:|---|
+${list(withSkill.top)}
+
+## Reading these numbers
+
+- The validators check form - beat count, line length, language, one camera move, no text drawn
+  inside frames - not whether the copy is good. A clean run is a usable draft, not a good ad.
+- Timings from this run are not reported: it shared the GPU with a film generation job.
+- Remaining violations are the skill's to-do list; they are fed back into the skill text.
+`
+    const target = `${skillsRoot}/${stage.skill}/BENCHMARK.md`
+    await writeFile(target, body)
+    written.push(target)
+  }
+  return written
+}

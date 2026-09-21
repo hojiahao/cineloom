@@ -64,19 +64,26 @@ export async function chat(endpoint: ModelEndpoint, options: ChatOptions): Promi
     content.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${(await readFile(image)).toString('base64')}` } })
   }
   const started = Date.now()
-  const response = await fetch(`${endpoint.baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${endpoint.apiKey}` },
-    body: JSON.stringify({
-      model: endpoint.model,
-      max_tokens: options.maxTokens ?? 6000,
-      temperature: options.temperature ?? 0.7,
-      chat_template_kwargs: { enable_thinking: options.thinking ?? true },
-      messages: [
-        { role: 'system', content: options.system },
-        { role: 'user', content: options.images?.length ? content : options.user },
-      ],
-    }),
+  const request = () =>
+    fetch(`${endpoint.baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${endpoint.apiKey}` },
+      body: JSON.stringify({
+        model: endpoint.model,
+        max_tokens: options.maxTokens ?? 6000,
+        temperature: options.temperature ?? 0.7,
+        chat_template_kwargs: { enable_thinking: options.thinking ?? true },
+        messages: [
+          { role: 'system', content: options.system },
+          { role: 'user', content: options.images?.length ? content : options.user },
+        ],
+      }),
+    })
+  // A transport failure (connection reset, or a reply slower than Node's 5-minute header timeout
+  // when the GPU is contended) is retried once; an HTTP error from the model is not.
+  const response = await request().catch(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+    return request()
   })
   if (!response.ok) throw new Error(`${endpoint.name} returned ${response.status}: ${(await response.text()).slice(0, 400)}`)
   const body = (await response.json()) as { choices: Array<{ message: { content: string | null } }>; usage?: { completion_tokens?: number } }

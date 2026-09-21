@@ -11,7 +11,7 @@ import { addAsset, createProject, loadProject, projectDir, setStage, STAGES, typ
 import { buildShots } from '../lib/shots.js'
 import { askVision, extractJson } from '../lib/vision.js'
 import { direct } from '../agent/director.js'
-import { runAblation } from '../agent/evals.js'
+import { runAblation, writeBenchmarks } from '../agent/evals.js'
 import { startStudio } from '../studio/server.js'
 
 export type Command = (args: ParsedArgs) => Promise<number>
@@ -246,6 +246,10 @@ async function directCommand(args: ParsedArgs): Promise<number> {
 
 /** Same model, same briefs, with and without the skills; scored by the director's validators. */
 async function evalCommand(args: ParsedArgs): Promise<number> {
+  if (flag(args, 'report-only') === 'true') {
+    print({ written: await writeBenchmarks(flag(args, 'out', 'eval/results/ablation.json')!) })
+    return 0
+  }
   print(await runAblation(flag(args, 'briefs', 'eval/briefs.json')!, flag(args, 'out', 'eval/results/ablation.json')!, numberFlag(args, 'repeats', 2), (line) => console.error(line)))
   return 0
 }
