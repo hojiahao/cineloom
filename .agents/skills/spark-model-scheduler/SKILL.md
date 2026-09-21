@@ -39,15 +39,17 @@ budget first, then start things.
 
    Exit code 1 means the plan does not fit with the reserve (default 10 GB). Reduce
    `--gpu-memory-utilization` / `--max-model-len` on the vLLM services, or stage the work.
-3. Stage work by phase when it does not fit at once. The CineLoom pipeline is naturally
+3. Keep one diffusion family resident at a time. With the image, edit and video models all left in ComfyUI next to the two LLMs, the GPU driver started failing allocations (`NV_ERR_NO_MEMORY` in the kernel log) and a 25-minute job died on a request timeout. Release at every phase boundary: hero still -> frames -> clips -> music.
+4. Stage work by phase when it does not fit at once. The CineLoom pipeline is naturally
    phased: text planning -> images -> video -> composition. Diffusion memory is only
    needed in the middle two phases, and the vision model only for breakdown and QA.
-4. Release diffusion memory after the media phase:
+5. Release diffusion memory at each boundary:
 
    ```bash
    cineloom mem free
    ```
-5. Record `cineloom mem status` before and after each phase into `eval/` - these numbers are
+6. Do not run a second GPU workload (an eval, another film) next to a film job; they share one pool and one GPU.
+7. Record `cineloom mem status` before and after each phase into `eval/` - these numbers are
    the platform evidence for the submission. Report measured values only.
 
 ## Reference budget (measure and replace)
@@ -57,7 +59,10 @@ budget first, then start things.
 | Nemotron 3.5 Lightning 30B-A3B NVFP4 | 35 GB | measured on GB10 at 0.25 of the pool, 64K context |
 | Step3-VL-10B FP8 | 24 GB | measured: 14.25 GiB weights; 0.20 of the pool gives a 47,616-token KV cache |
 | ComfyUI, Qwen-Image fp8 | 32 GB | 20.4 GB model + 9.4 GB text encoder |
+| ComfyUI, Qwen-Image-Edit-2509 | 32 GB | same size as Qwen-Image; a different family, so release one before loading the other |
+| ComfyUI, Wan2.2 I2V A14B fp8 | 30 GB | two 14.3 GB experts loaded in turn + 6.7 GB text encoder + activations |
 | ComfyUI, Wan2.2 TI2V-5B | 20 GB | 10 GB model + 6.7 GB text encoder + activations |
+| ComfyUI, ACE-Step music | 9 GB | 7.7 GB checkpoint |
 | OS, CineLoom, reserve | 15 GB | |
 
 vLLM's `--gpu-memory-utilization` is a fraction of the whole pool and is claimed at

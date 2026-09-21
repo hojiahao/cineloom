@@ -55,6 +55,22 @@ export const VO_MIN_CHARS = 8
 export const TEXT_MAX_CHARS = 8
 const CJK = /[一-鿿]/
 
+// Everything a caption may contain: CJK, Latin letters, digits and ordinary punctuation. Anything else
+// (emoji, replacement characters, stray symbols, other scripts) is how garbage reaches the screen.
+const CAPTION_ALLOWED = /^[\u4e00-\u9fffA-Za-z0-9 ，。！？、：；“”‘’·—…%％℃°+\-]*$/
+const REPEATED_PUNCTUATION = /[，。！？、：；·—…]{2,}|[,.!?;:]{1,}/
+
+/** Problems that would make an on-screen line look wrong, whatever it says. */
+export function captionProblems(label: string, text: string, isTitle: boolean): string[] {
+  const problems: string[] = []
+  const value = text ?? ''
+  if (!CAPTION_ALLOWED.test(value)) problems.push(`${label}: contains characters that must not appear on screen (${[...value].filter((char) => !CAPTION_ALLOWED.test(char)).join(' ')}); use Chinese characters, digits and ordinary Chinese punctuation only`)
+  if (REPEATED_PUNCTUATION.test(value)) problems.push(`${label}: repeated or half-width punctuation; use single full-width marks`)
+  if (/^[，。！？、：；·—…]/.test(value.trim())) problems.push(`${label}: starts with punctuation`)
+  if (isTitle && /[，。！？、：；]$/.test(value.trim())) problems.push(`${label}: a title has no closing punctuation`)
+  return problems
+}
+
 /** Visible characters, ignoring whitespace and punctuation - what a voice actually has to read. */
 export const spokenLength = (text: string) => [...text.replace(/[\s，。！？、,.!?：:；;“”"'…—-]/g, '')].length
 
@@ -84,6 +100,7 @@ export function checkScript(script: Script, brief: Brief): string[] {
       if (spokenLength(beat.vo) < VO_MIN_CHARS) problems.push(`${label}: voiceover has only ${spokenLength(beat.vo)} characters; write ${VO_MIN_CHARS}-${VO_MAX_CHARS} so the beat is not mostly silence`)
       if (spokenLength(beat.vo) > VO_MAX_CHARS) problems.push(`${label}: voiceover has ${spokenLength(beat.vo)} characters; at most ${VO_MAX_CHARS} fit in 5 seconds`)
     }
+    problems.push(...captionProblems(`${label} voiceover`, beat.vo ?? '', false), ...captionProblems(`${label} on-screen text`, beat.text ?? '', true))
     if (spokenLength(beat.text ?? '') > TEXT_MAX_CHARS) problems.push(`${label}: on-screen text has ${spokenLength(beat.text)} characters; at most ${TEXT_MAX_CHARS}`)
   }
   const copy = beats.map((beat) => `${beat.vo}\n${beat.text ?? ''}`).join('\n')

@@ -2,12 +2,13 @@ import { appendFile, mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ComfyClient } from '../comfy/client.js'
 import { scanCopy } from '../lib/compliance.js'
-import { assembleFilm, clipStart, probeDuration } from '../lib/ffmpeg.js'
+import { probeDuration } from '../lib/ffmpeg.js'
 import { generateImage, generateVideo, type VideoModel } from '../lib/media.js'
-import { buildAss } from '../lib/titles.js'
 import { memoryStatus } from '../lib/memory.js'
 import { addAsset, createProject, projectDir, setStage, type Stage } from '../lib/project.js'
 import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
+import { enterPhase, finishFilm } from './finish.js'
+import { qualityGate, type QaVerdict } from './gate.js'
 import { chatJson, endpoints, type ModelEndpoint } from './llm.js'
 import { agentSystem, scriptUser, storyboardUser } from './prompts.js'
 import { loadRules, loadSkill } from './skills.js'
@@ -23,8 +24,12 @@ export interface HarnessOptions {
   withoutSkills?: boolean
   resolution?: string
   videoModel?: VideoModel
-  /** Music bed for the final cut. Only a file the user supplied or has rights to. */
+  /** Use this music file instead of generating a bed. Only a file the user supplied or has rights to. */
   audio?: string
+  /** Leave the film silent (no voiceover, no music). */
+  silent?: boolean
+  /** Frames generated per shot before the gate picks one. */
+  candidates?: number
   log?: (line: string) => void
 }
 
@@ -39,14 +44,6 @@ export interface HarnessResult {
 
 const FRAME_SIZE: Record<string, string> = { '9:16': '1080x1920', '16:9': '1920x1080', '1:1': '1328x1328' }
 const MAX_QA_REGENERATIONS = 2
-const FINAL_SIZE: Record<string, [number, number]> = { '9:16': [1080, 1920], '16:9': [1920, 1080], '1:1': [1080, 1080] }
-const CROSSFADE_SECONDS = 0.4
-
-interface QaVerdict {
-  pass: boolean
-  score: number
-  issues: string[]
-}
 
 /**
  * CineLoom Harness: the runtime that hosts the director and its sub-agents. Eight stages in
@@ -204,17 +201,25 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   for (const shot of storyboard.shots) {
     let prompt = composeImagePrompt(shot, storyboard, true)
     let best: { path: string; verdict: QaVerdict } | undefined
-    for (let attempt = 0; attempt <= MAX_QA_REGENERATIONS; attempt++) {
-      const path = join(dir, 'frames', `shot_${String(shot.shot).padStart(3, '0')}${attempt ? `_r${attempt}` : ''}.png`)
+    const consider = (path: string, verdict: QaVerdict) => {
+      if (!best || (verdict.pass && !best.verdict.pass) || (verdict.pass === best.verdict.pass && verdict.score > best.verdict.score)) best = { path, verdict }
+    }
+    const shoot = async (suffix: string, attempt: number) => {
+      const path = join(dir, 'frames', `shot_${String(shot.shot).padStart(3, '0')}${suffix}.png`)
       const image = await generateImage(comfy, { prompt, size: FRAME_SIZE[brief.ratio]!, output: path, references: [hero!.path] })
       const verdict = await qualityGate(reviewer, path, shot, hero!.path)
-      log(`▸ frame ${shot.shot}      ${image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
-      await record('qa', 'quality-gate', reviewer, { shot: shot.shot, attempt, imageSeconds: image.seconds, ...verdict })
-      if (!best || verdict.score > best.verdict.score || (verdict.pass && !best.verdict.pass)) best = { path, verdict }
-      if (verdict.pass) break
-      if (attempt === MAX_QA_REGENERATIONS) break
+      log(`▸ frame ${shot.shot}${suffix.padEnd(5)} ${image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
+      await record('qa', 'quality-gate', reviewer, { shot: shot.shot, attempt, candidate: suffix || '_a', imageSeconds: image.seconds, ...verdict })
+      consider(path, verdict)
+    }
+    // Best of N: the same prompt with different seeds. A diffusion model's spread between
+    // seeds is often larger than what a prompt edit buys, and the gate can rank the results.
+    const candidates = Math.max(1, options.candidates ?? 2)
+    for (let index = 0; index < candidates; index++) await shoot(index === 0 ? '' : `_c${index + 1}`, 0)
+    for (let attempt = 1; attempt <= MAX_QA_REGENERATIONS && !best!.verdict.pass; attempt++) {
       result.qaRegenerations++
-      prompt = await repairPrompt(planner, await agentPrompt('storyboard artist', 'shot-quality-gate'), shot, prompt, verdict.issues)
+      prompt = await repairPrompt(planner, await agentPrompt('storyboard artist', 'shot-quality-gate'), shot, prompt, best!.verdict.issues)
+      await shoot(`_r${attempt}`, attempt)
     }
     frames.set(shot.shot, best!.path)
     await addAsset(brief.id, {
@@ -242,21 +247,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
 
   // ---- cut -------------------------------------------------------------------------------
   await setStage(brief.id, 'cut', 'running')
-  await mkdir(join(dir, 'cut'), { recursive: true })
-  const [width, height] = FINAL_SIZE[brief.ratio]!
-  // Titles and subtitles are typeset here in a real font; the image model is never asked to draw them.
-  const cues = script.beats.map((beat, index) => ({
-    start: clipStart(index, 5, CROSSFADE_SECONDS),
-    end: clipStart(index, 5, CROSSFADE_SECONDS) + 5,
-    title: beat.text,
-    subtitle: beat.vo,
-  }))
-  const ass = join(dir, 'cut', 'titles.ass')
-  await writeFile(ass, buildAss(cues, width, height))
-  const finalCut = join(dir, 'cut', 'final.mp4')
-  await assembleFilm(storyboard.shots.map((shot) => join(dir, 'clips', `shot_${String(shot.shot).padStart(3, '0')}.mp4`)), finalCut, {
-    width, height, fps: 24, clipSeconds: 5, crossfadeSeconds: CROSSFADE_SECONDS, ass, audio: options.audio,
-  })
+  const finalCut = await finishFilm({ dir, brief, script, storyboard, heroPath: hero!.path, comfy, audio: options.audio, silent: options.silent, record, log })
   await addAsset(brief.id, { id: 'final-cut', kind: 'video', stage: 'cut', path: 'cut/final.mp4', execution: 'local-dgx-spark', model: 'ffmpeg' })
   await setStage(brief.id, 'cut', 'done', `${(await probeDuration(finalCut)).toFixed(1)}s`)
   result.finalCut = finalCut
@@ -264,60 +255,6 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   await record('run', 'director', undefined, { wallSeconds: result.wallSeconds, qaRegenerations: result.qaRegenerations, rejectedAttempts, memoryAtEnd: await memoryStatus() })
   log(`▸ cut          ${finalCut}`)
   return result
-}
-
-/**
- * Phase boundary on a machine with one memory pool: the two LLM services stay resident, but
- * only one diffusion family should. Unload whatever the previous phase left in ComfyUI and
- * record memory, which is the spark-model-scheduler skill carried out by the harness.
- */
-async function enterPhase(comfy: ComfyClient, phase: string, record: (stage: 'run', agent: string, endpoint: undefined, detail: Record<string, unknown>) => Promise<void>): Promise<void> {
-  const before = await memoryStatus()
-  await comfy.free()
-  await new Promise((resolve) => setTimeout(resolve, 3000))
-  await record('run', 'scheduler', undefined, { phase, availableBeforeGb: before.availableGb, availableAfterFreeGb: (await memoryStatus()).availableGb })
-}
-
-/**
- * The gate must never take the film down with it. A failed verdict is retried with a larger
- * budget; if the reviewer still cannot answer, the frame goes ahead marked unverified and the
- * delivery record says so.
- */
-async function qualityGate(reviewer: ModelEndpoint, frame: string, shot: Shot, productReference?: string): Promise<QaVerdict> {
-  for (const maxTokens of [3500, 6000]) {
-    try {
-      return await runGate(reviewer, frame, shot, productReference, maxTokens)
-    } catch {
-      // fall through to the larger budget
-    }
-  }
-  return { pass: true, score: -1, issues: ['quality gate unavailable: frame accepted unverified'] }
-}
-
-async function runGate(reviewer: ModelEndpoint, frame: string, shot: Shot, productReference: string | undefined, maxTokens: number): Promise<QaVerdict> {
-  const run = await chatJson<QaVerdict>(
-    reviewer,
-    {
-      system: 'You are the quality gate of an advertising studio. You did not write the prompt. Judge only what is visible, and be strict: a flawed frame costs six minutes of video generation.',
-      images: productReference ? [frame, productReference] : [frame],
-      // The local vision model reasons before it answers; too small a budget returns nothing at all.
-      maxTokens,
-      temperature: 0,
-      user: `Image 1 is the generated frame.${productReference ? ' Image 2 is the approved product reference.' : ''}
-The frame must show: ${shot.must_show}
-Reject (pass=false) if ANY of these is true:
-- the required content is missing;
-${productReference ? '- the product in image 1 is a different product from image 2: another container type, other main colours, or different brand lettering. Ignore condensation, lighting, camera angle, reflections, scale and fine print - those are expected to change between shots;\n' : ''}- there is ANY text outside the product label: captions, slogans, subtitles, numbers, lens specs, watermarks;
-- any lettering is garbled, duplicated or nonsensical;
-- extra limbs, malformed hands or a distorted face;
-- the product is cropped, floating or physically implausible.
-Decide quickly; do not deliberate at length. Reply with JSON only: {"pass": boolean, "score": 0-100, "issues": ["short issue"]}. Pass requires score >= 80 and none of the reject conditions.`,
-    },
-    (verdict) => (typeof verdict.pass === 'boolean' && typeof verdict.score === 'number' ? [] : ['need boolean "pass" and numeric "score"']),
-    2,
-  )
-  const issues = Array.isArray(run.value.issues) ? run.value.issues : []
-  return { pass: run.value.pass && run.value.score >= 80, score: run.value.score, issues }
 }
 
 async function repairPrompt(planner: ModelEndpoint, system: string, shot: Shot, prompt: string, issues: string[]): Promise<string> {
@@ -335,10 +272,4 @@ Return JSON only: {"image_prompt": "..."}`,
     2,
   )
   return run.value.image_prompt
-}
-
-function srtTime(seconds: number): string {
-  const ms = Math.round(seconds * 1000)
-  const pad = (value: number, size = 2) => String(value).padStart(size, '0')
-  return `${pad(Math.floor(ms / 3_600_000))}:${pad(Math.floor(ms / 60_000) % 60)}:${pad(Math.floor(ms / 1000) % 60)},${pad(ms % 1000, 3)}`
 }

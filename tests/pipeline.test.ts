@@ -43,7 +43,8 @@ describe('brief to final cut through the CLI', () => {
 
     const cut = await cineloom('cut', '--project', 'soda')
     expect(cut.clips).toBe(2)
-    expect(cut.duration).toBeGreaterThan(2.5)
+    expect(cut.mode).toBe('picture only')
+    expect(cut.duration).toBeGreaterThan(1.2)
 
     const state = await cineloom('project', 'status', '--id', 'soda')
     expect(state.stages.cut.status).toBe('done')

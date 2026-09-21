@@ -1,7 +1,7 @@
 ---
 name: final-cut-assembly
 version: "0.1.0"
-description: Assemble approved clips into the final advertisement with ffmpeg - shot order, uniform size and frame rate, subtitles, music bed - and write the delivery report. Use when all clips of a project exist, or when the user asks to re-cut, add or change subtitles or music, or export the final video.
+description: Finish approved clips into the final advertisement - end card on the product, typeset titles and subtitles, offline voiceover over a locally generated music bed, crossfades and a cinematic grade - and write the delivery report. Use when all clips of a project exist, or when the user asks to re-cut, add or change subtitles or music, or export the final video.
 license: MIT
 metadata:
   author: 方舟团队 (Team Ark)
@@ -13,25 +13,26 @@ metadata:
 
 # Final cut assembly
 
+A film is finished in the cut: the same clips read as a draft or as an ad depending on
+the ending, the type, the grade and the sound.
+
 ## Workflow
 
 1. Confirm every storyboard shot has a clip: `cineloom project status --id <id>`.
-2. Build subtitles from the script's voiceover as `projects/<id>/cut/subtitles.srt`. One cue per beat, timed to the beat's window, at most 14 characters per line. On-screen text that failed the quality gate belongs here instead of in the image.
-3. Assemble:
+2. **End card.** Close on the approved product hero still with a slow push-in, the brand name as the title and the brief's single message under it. It guarantees the film ends on the product and that the brand on screen is typeset, never generated.
+3. **Typography.** One title per beat (the script's on-screen text) and the voiceover as subtitles, set in Noto Sans CJK SC. Before rendering, check that the font has a glyph for every character; a missing glyph must fail the cut, not render as a box. Titles carry no closing punctuation.
+4. **Sound.** Synthesise the voiceover offline, one line per beat, placed 0.45 s after the beat starts; if a line overruns its beat, re-synthesise it faster (at most 1.25x) rather than cutting it. Generate an instrumental bed locally (ACE-Step) from the brief's tone, and let it duck under the voice instead of sitting at one low level. Use a music file only if the user supplied it or has the rights to it.
+5. **Picture.** Conform every clip to the delivery size (1080x1920, 1920x1080 or 1080x1080) at 24 fps, crossfade 0.4 s between shots, then grade the joined film as one image: gentle contrast, a teal/warm split, light sharpening, fine grain, a soft vignette, fade in and out. Grading after the join is what makes shots from different generations look like one film.
+6. Check the printed duration against the brief plus the 3-second end card. A mismatch means a missing or extra clip, not a rounding problem.
+7. Write `projects/<id>/reports/delivery.md`.
 
-   ```bash
-   cineloom cut --project <id> --subtitles projects/<id>/cut/subtitles.srt --audio projects/<id>/refs/music.mp3
-   ```
-
-   Clips are ordered by shot number, scaled and padded to the project ratio at 24 fps, joined, then subtitles are burned in and the music bed mixed at -10 dB. `--audio` and `--subtitles` are optional. Only use music the user supplied or has rights to.
-4. Check the printed duration against the brief. A mismatch means a missing or extra clip, not a rounding problem.
-5. Write `projects/<id>/reports/delivery.md`.
+`cineloom harness` performs steps 2-6. `cineloom cut --project <id>` re-runs the picture pass on an existing project.
 
 ## delivery.md
 
 - What was made: title, duration, ratio, link to `cut/final.mp4`.
-- Per shot: prompt summary, generation seconds for frame and clip, quality-gate score, regenerations.
-- Totals: measured wall time per stage, peak memory from `cineloom mem status`, quality-gate pass rate.
-- Where each asset was produced (local or cloud) and which model produced it.
-- Open issues: shots kept despite a failed gate, compliance items that need human confirmation.
-- Label for publication: the film is AI-generated and must be marked as such on platforms that require it.
+- Per shot: prompt summary, generation seconds for frame and clip, candidates tried, quality-gate score, regenerations.
+- Totals: measured wall time per stage, memory at each phase boundary, quality-gate pass rate.
+- Where each asset was produced (local or cloud) and which model produced it, including voice and music.
+- Open issues: shots kept despite a failed gate, frames accepted unverified, compliance items that need human confirmation.
+- Label for publication: the film, its voice and its music are AI-generated and must be marked as such on platforms that require it.

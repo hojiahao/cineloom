@@ -27,7 +27,7 @@ three seconds and spend the rest proving it.
 3. Divide the duration into 5-second beats - one beat becomes one generated clip. A 15 s ad has three beats; do not write more.
 4. For each beat write: what we see (one subject, one action), voiceover, on-screen text, and the beat's job (hook, proof, payoff, call to action).
 5. Budget words: Mandarin voiceover reads at about 4 characters per second. Write 10-18 characters per 5 s beat and count them. Over 18 cannot be read in time; under 8 leaves most of the beat silent - a model asked only for a maximum tends to answer with four characters.
-6. On-screen text is at most 8 characters per beat and must be exact - the image model renders it literally.
+6. On-screen text is a title of at most 8 characters per beat. It is typeset in post-production in a real font, never drawn by the image model, so write exactly what should appear: Chinese characters, digits and ordinary full-width punctuation only - no emoji, no symbols, no doubled marks, and no closing punctuation on a title.
 7. Write `projects/<id>/script/script.md`, then hand the copy to `ad-compliance-review` before anything is generated.
 
 ## Output format
@@ -46,5 +46,7 @@ Text: "..."
 
 - The first beat works with the sound off.
 - The product is visible in at least two beats, and in the last one.
-- Claims come from the brief's proof points. No superlatives, no guarantees, no numbers without a source - these fail compliance and cost a rewrite.
+- Claims come from the brief's proof points. No superlatives, no guarantees, no numbers without a source, and no body or health effects for food and drink ("提神醒脑", "解暑降火") - these fail compliance and cost a rewrite. Describe the experience (taste, feel, moment), not an effect.
+- Match the register to the category: a drink is tasted, a cream is felt, a device is used. Borrowing another category's vocabulary ("肌肤燥热" for a soda) reads as wrong even when every rule passes.
+- The film ends on an end card with the brand and the single message, so the last beat should hand over to it rather than repeat it.
 - Voiceover sounds like a person talking, not a slogan list. Read it aloud once.

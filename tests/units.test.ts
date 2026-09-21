@@ -104,7 +104,7 @@ describe('skill checks (shared by the director and the evals)', () => {
 })
 
 import { composeImagePrompt, composeProductPrompt, sanitizeStyle } from '../src/agent/checks.js'
-import { clipStart } from '../src/lib/ffmpeg.js'
+import { clipStart, filmLength } from '../src/lib/ffmpeg.js'
 import { buildAss } from '../src/lib/titles.js'
 
 describe('prompt composition and finishing', () => {
@@ -123,10 +123,27 @@ describe('prompt composition and finishing', () => {
     expect(composeProductPrompt(storyboard)).toMatch(/^Studio product photograph of a slim silver can/)
   })
   it('places clips and titles on the crossfaded timeline', () => {
-    expect(clipStart(2, 5, 0.4)).toBeCloseTo(9.2)
+    expect(clipStart(2, [5, 5, 5, 3], 0.4)).toBeCloseTo(9.2)
+    expect(filmLength([5, 5, 5, 3], 0.4)).toBeCloseTo(16.8)
     const ass = buildAss([{ start: 4.6, end: 9.6, title: '0糖', subtitle: '气泡更足{\\b1}' }], 1080, 1920)
     expect(ass).toContain('PlayResY: 1920')
     expect(ass).toMatch(/Dialogue: 1,0:00:05\.10,0:00:09\.20,Title/)
     expect(ass).toContain('气泡更足b1') // override tags from model text are neutralised
+  })
+})
+
+import { captionProblems } from '../src/agent/checks.js'
+
+describe('captions', () => {
+  it('accepts ordinary Chinese ad copy', () => {
+    expect(captionProblems('vo', '第一口下去，冰凉满口', false)).toEqual([])
+    expect(captionProblems('title', '0糖', true)).toEqual([])
+  })
+  it('rejects emoji, replacement characters, doubled or half-width punctuation and a title ending in a full stop', () => {
+    expect(captionProblems('vo', '清爽一夏🥤', false)[0]).toMatch(/must not appear on screen/)
+    expect(captionProblems('vo', '清爽�一夏', false)).toHaveLength(1)
+    expect(captionProblems('vo', '太爽了！！', false)[0]).toMatch(/repeated or half-width/)
+    expect(captionProblems('vo', '清爽,一夏', false)[0]).toMatch(/must not appear|half-width/)
+    expect(captionProblems('title', '清爽。', true)[0]).toMatch(/no closing punctuation/)
   })
 })

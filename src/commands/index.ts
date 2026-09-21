@@ -1,16 +1,19 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, relative, resolve } from 'node:path'
 import { ComfyClient } from '../comfy/client.js'
 import { loadWorkflow } from '../comfy/workflow.js'
 import { flag, numberFlag, requireFlag, UsageError, type ParsedArgs } from '../lib/args.js'
 import { CATEGORIES, scanCopy, type Category } from '../lib/compliance.js'
-import { assembleCut, detectCuts, extractFrame, probeDuration } from '../lib/ffmpeg.js'
-import { generateImage, generateVideo, videoSize } from '../lib/media.js'
+import { assembleFilm, detectCuts, extractFrame, probeDuration } from '../lib/ffmpeg.js'
+import { generateImage, generateVideo } from '../lib/media.js'
 import { memoryStatus, planMemory } from '../lib/memory.js'
 import { addAsset, createProject, loadProject, projectDir, setStage, STAGES, type Stage, type StageStatus } from '../lib/project.js'
 import { buildShots } from '../lib/shots.js'
-import { askVision, extractJson } from '../lib/vision.js'
+import type { Brief, Script, Storyboard } from '../agent/checks.js'
+import { CROSSFADE_SECONDS, FINAL_SIZE, finishFilm, type Recorder } from '../agent/finish.js'
+import { qualityGate } from '../agent/gate.js'
 import { runHarness } from '../agent/harness.js'
+import { endpoints } from '../agent/llm.js'
 import { runAblation, writeBenchmarks } from '../agent/evals.js'
 import { startStudio } from '../studio/server.js'
 
@@ -151,46 +154,51 @@ async function mem(args: ParsedArgs): Promise<number> {
   throw new UsageError('usage: cineloom mem <status|plan|free> [--need name=GB ...] [--reserve 10] [--against total|available]')
 }
 
-interface QaVerdict {
-  pass: boolean
-  score: number
-  issues: string[]
-}
-
+/** The same gate the harness runs, for one frame. */
 async function qa(args: ParsedArgs): Promise<number> {
   const frame = requireFlag(args, 'frame')
-  const references = args.flags.get('ref') ?? []
-  const brief = flag(args, 'expect', '')
-  const question = [
-    'You are the quality gate of an advertising studio. The FIRST image is a generated shot.',
-    references.length > 0 ? `The other ${references.length} image(s) are approved references (product, character or scene).` : '',
-    brief ? `The shot must show: ${brief}` : '',
-    'Check: product shape, colour, label and logo match the references; no warped text; no extra limbs or fingers; the requested content is present.',
-    'Reply with JSON only: {"pass": boolean, "score": 0-100, "issues": ["short issue", ...]}. Pass requires score >= 75 and no product mismatch.',
-  ].filter(Boolean).join('\n')
-  const verdict = extractJson<QaVerdict>(await askVision(question, [frame, ...references]))
+  const reference = args.flags.get('ref')?.[0]
+  const expectation = flag(args, 'expect', 'a clean, well composed advertising frame')!
+  const shot = { shot: Number(flag(args, 'shot', '0')), seconds: 5, framing: '', camera: '', image_prompt: flag(args, 'prompt', '')!, video_prompt: '', on_screen_text: '', must_show: expectation }
+  const verdict = await qualityGate(endpoints().reviewer, frame, shot, reference)
   const id = flag(args, 'project')
-  if (id) {
-    const report = join(projectDir(id), 'reports', `qa_${flag(args, 'shot', 'x')}.json`)
-    await writeFile(report, JSON.stringify({ frame, references, verdict }, null, 2))
-  }
+  if (id) await writeFile(join(projectDir(id), 'reports', `qa_${flag(args, 'shot', 'x')}.json`), JSON.stringify({ frame, reference, verdict }, null, 2))
   print(verdict)
   return verdict.pass ? 0 : 1
 }
 
+/** Re-run the cut stage of a harness project: end card, titles, sound, grade. */
 async function cut(args: ParsedArgs): Promise<number> {
   const id = requireFlag(args, 'project')
+  const dir = projectDir(id)
   const state = await loadProject(id)
-  const clips = state.assets.filter((asset) => asset.kind === 'video' && asset.stage === 'clips').sort((a, b) => (a.shot ?? 0) - (b.shot ?? 0))
-  if (clips.length === 0) throw new Error('No clips in this project yet.')
-  const [width, height] = videoSize(flag(args, 'resolution', '720p')!, state.ratio)
-  const output = join(projectDir(id), 'cut', 'final.mp4')
-  await assembleCut(clips.map((clip) => join(projectDir(id), clip.path)), output, {
-    width, height, fps: 24, audio: flag(args, 'audio'), audioGainDb: numberFlag(args, 'audio-gain', -10), subtitles: flag(args, 'subtitles'),
+  const read = async <T>(path: string) => JSON.parse(await readFile(join(dir, path), 'utf8')) as T
+  const hero = state.assets.find((asset) => asset.id === 'product-hero')
+  if (!hero) {
+    // A project assembled by hand with the individual tools has no script or hero still:
+    // join and grade its clips, without end card, titles or sound.
+    const clips = state.assets.filter((asset) => asset.kind === 'video' && asset.stage === 'clips').sort((a, b) => (a.shot ?? 0) - (b.shot ?? 0))
+    if (clips.length === 0) throw new Error('No clips in this project yet.')
+    const paths = clips.map((clip) => join(dir, clip.path))
+    const durations = await Promise.all(paths.map(async (path) => Math.max(0.5, Math.floor((await probeDuration(path)) * 10) / 10)))
+    const [width, height] = FINAL_SIZE[state.ratio] ?? FINAL_SIZE['9:16']!
+    const simple = join(dir, 'cut', 'final.mp4')
+    await mkdir(join(dir, 'cut'), { recursive: true })
+    await assembleFilm(paths, simple, { width, height, fps: 24, durations, crossfadeSeconds: Math.min(CROSSFADE_SECONDS, Math.min(...durations) / 3), audio: flag(args, 'audio') })
+    await addAsset(id, { id: 'final-cut', kind: 'video', stage: 'cut', path: 'cut/final.mp4', execution: 'local-dgx-spark', model: 'ffmpeg' })
+    await setStage(id, 'cut', 'done')
+    print({ output: simple, clips: clips.length, duration: round(await probeDuration(simple)), mode: 'picture only' })
+    return 0
+  }
+  const record: Recorder = async (stage, agent, _endpoint, detail) =>
+    appendFile(join(dir, 'reports', 'run.jsonl'), `${JSON.stringify({ ts: new Date().toISOString(), stage, agent, execution: 'local-dgx-spark', ...detail })}\n`)
+  const output = await finishFilm({
+    dir, brief: await read<Brief>('brief.json'), script: await read<Script>('script/script.json'), storyboard: await read<Storyboard>('storyboard/storyboard.json'),
+    heroPath: join(dir, hero.path), comfy: new ComfyClient(), audio: flag(args, 'audio'), silent: flag(args, 'silent') === 'true', record, log: (line) => console.error(line),
   })
   await addAsset(id, { id: 'final-cut', kind: 'video', stage: 'cut', path: 'cut/final.mp4', execution: 'local-dgx-spark', model: 'ffmpeg' })
   await setStage(id, 'cut', 'done')
-  print({ output, clips: clips.length, duration: round(await probeDuration(output)) })
+  print({ output, duration: round(await probeDuration(output)) })
   return 0
 }
 
@@ -198,7 +206,7 @@ async function cut(args: ParsedArgs): Promise<number> {
 async function doctor(): Promise<number> {
   const info = await new ComfyClient().objectInfo()
   const problems: string[] = []
-  for (const name of ['qwen_image_lightning', 'qwen_image_edit_lightning', 'wan22_ti2v_5b_t2v', 'wan22_ti2v_5b_i2v', 'wan22_i2v_14b_4step']) {
+  for (const name of ['qwen_image_lightning', 'qwen_image_edit_lightning', 'wan22_ti2v_5b_t2v', 'wan22_ti2v_5b_i2v', 'wan22_i2v_14b_4step', 'ace_step_instrumental']) {
     const graph = (await loadWorkflow(name)) as Record<string, { class_type: string; inputs: Record<string, unknown> }>
     for (const [nodeId, node] of Object.entries(graph)) {
       if (nodeId.startsWith('_')) continue
@@ -239,6 +247,8 @@ async function harnessCommand(args: ParsedArgs): Promise<number> {
     resolution: flag(args, 'resolution'),
     videoModel: flag(args, 'video-model') as never,
     audio: flag(args, 'audio'),
+    silent: flag(args, 'silent') === 'true',
+    candidates: flag(args, 'candidates') ? numberFlag(args, 'candidates', 2) : undefined,
   })
   print(result)
   return 0

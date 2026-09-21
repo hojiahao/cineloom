@@ -87,7 +87,7 @@ interface HistoryEntry {
 function outputFiles(outputs: Record<string, Record<string, unknown>>): ComfyOutputFile[] {
   const files: ComfyOutputFile[] = []
   for (const nodeOutput of Object.values(outputs)) {
-    for (const key of ['images', 'gifs', 'videos', 'video']) {
+    for (const key of ['images', 'gifs', 'videos', 'video', 'audio']) {
       for (const record of (nodeOutput[key] as ComfyOutputFile[] | undefined) ?? []) {
         if (record?.filename) files.push(record)
       }

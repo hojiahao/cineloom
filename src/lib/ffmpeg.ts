@@ -67,15 +67,19 @@ export interface FilmOptions {
   width: number
   height: number
   fps: number
-  clipSeconds: number
+  /** Seconds each clip occupies on the timeline, in clip order. */
+  durations: number[]
   crossfadeSeconds: number
   ass?: string
+  /** Finished soundtrack (voiceover already mixed over music), laid under the picture as is. */
   audio?: string
-  audioGainDb?: number
 }
 
 /** Seconds at which clip `index` starts on the final timeline, given crossfades between clips. */
-export const clipStart = (index: number, clipSeconds: number, crossfadeSeconds: number) => index * (clipSeconds - crossfadeSeconds)
+export const clipStart = (index: number, durations: number[], crossfadeSeconds: number) =>
+  durations.slice(0, index).reduce((sum, seconds) => sum + seconds - crossfadeSeconds, 0)
+
+export const filmLength = (durations: number[], crossfadeSeconds: number) => clipStart(durations.length - 1, durations, crossfadeSeconds) + durations.at(-1)!
 
 /**
  * Finishing pass: conform every clip, crossfade between them, then grade the whole film as
@@ -84,18 +88,18 @@ export const clipStart = (index: number, clipSeconds: number, crossfadeSeconds: 
  * looking like one film.
  */
 export async function assembleFilm(clips: string[], output: string, options: FilmOptions): Promise<void> {
-  const { width, height, fps, clipSeconds, crossfadeSeconds } = options
+  const { width, height, fps, durations, crossfadeSeconds } = options
   const conform = clips
-    .map((_, index) => `[${index}:v]scale=${width}:${height}:force_original_aspect_ratio=increase:flags=lanczos,crop=${width}:${height},setsar=1,fps=${fps},trim=duration=${clipSeconds},setpts=PTS-STARTPTS,format=yuv420p[c${index}]`)
+    .map((_, index) => `[${index}:v]scale=${width}:${height}:force_original_aspect_ratio=increase:flags=lanczos,crop=${width}:${height},setsar=1,fps=${fps},trim=duration=${durations[index]},setpts=PTS-STARTPTS,format=yuv420p[c${index}]`)
     .join(';')
   let chain = conform
   let last = '[c0]'
   for (let index = 1; index < clips.length; index++) {
     const label = `[x${index}]`
-    chain += `;${last}[c${index}]xfade=transition=fade:duration=${crossfadeSeconds}:offset=${clipStart(index, clipSeconds, crossfadeSeconds).toFixed(3)}${label}`
+    chain += `;${last}[c${index}]xfade=transition=fade:duration=${crossfadeSeconds}:offset=${clipStart(index, durations, crossfadeSeconds).toFixed(3)}${label}`
     last = label
   }
-  const total = clipStart(clips.length - 1, clipSeconds, crossfadeSeconds) + clipSeconds
+  const total = filmLength(durations, crossfadeSeconds)
   const grade = [
     'eq=contrast=1.07:saturation=1.10:gamma=0.98',
     'colorbalance=rs=0.04:gs=0.01:bs=-0.03:rh=-0.02:bh=0.04',
@@ -114,10 +118,29 @@ export async function assembleFilm(clips: string[], output: string, options: Fil
   const args = ['-hide_banner', '-loglevel', 'error', '-y', ...clips.flatMap((clip) => ['-i', clip])]
   if (options.audio) {
     args.push('-i', options.audio)
-    chain += `;[${clips.length}:a]volume=${options.audioGainDb ?? -10}dB,afade=t=out:st=${(total - 1).toFixed(3)}:d=1[music]`
+    chain += `;[${clips.length}:a]afade=t=in:st=0:d=0.3,afade=t=out:st=${(total - 0.8).toFixed(3)}:d=0.8[sound]`
   }
   args.push('-filter_complex', chain, '-map', videoLabel)
-  if (options.audio) args.push('-map', '[music]', '-shortest', '-c:a', 'aac', '-b:a', '192k')
+  if (options.audio) args.push('-map', '[sound]', '-t', total.toFixed(3), '-c:a', 'aac', '-b:a', '192k')
   args.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output)
   await exec('ffmpeg', args)
+}
+
+/** A slow push-in on a still image: used for the end card built from the approved product hero. */
+export async function stillToClip(image: string, output: string, options: { width: number; height: number; fps: number; seconds: number }): Promise<void> {
+  const frames = Math.round(options.seconds * options.fps)
+  // Oversample before zoompan, otherwise its integer pixel steps show up as jitter.
+  const filter = `scale=${options.width * 2}:${options.height * 2}:force_original_aspect_ratio=increase:flags=lanczos,crop=${options.width * 2}:${options.height * 2},zoompan=z='1+0.06*on/${frames}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${frames}:s=${options.width}x${options.height}:fps=${options.fps},format=yuv420p`
+  await exec('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-loop', '1', '-i', image, '-vf', filter, '-t', String(options.seconds), '-c:v', 'libx264', '-crf', '14', '-pix_fmt', 'yuv420p', output])
+}
+
+/** True when the font has a glyph for every character, so a missing glyph fails the cut instead of showing a box. */
+export async function fontCovers(family: string, text: string): Promise<{ ok: boolean; missing: string[] }> {
+  const chars = [...new Set([...text].filter((char) => char.trim() && char.codePointAt(0)! > 0x7f))]
+  const missing: string[] = []
+  for (const char of chars) {
+    const { stdout } = await exec('fc-list', [`:family=${family}:charset=${char.codePointAt(0)!.toString(16)}`, 'family'], { allowFailure: true })
+    if (!stdout.trim()) missing.push(char)
+  }
+  return { ok: missing.length === 0, missing }
 }

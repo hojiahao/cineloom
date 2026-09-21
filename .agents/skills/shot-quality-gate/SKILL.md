@@ -14,28 +14,38 @@ metadata:
 
 # Shot quality gate
 
-Video generation is the expensive step, and it faithfully animates whatever is wrong in
-its first frame. Gate frames with a second pair of eyes that did not write the prompt.
+Video generation is the expensive step - about six minutes a clip on this machine - and it
+faithfully animates whatever is wrong in its first frame. Gate frames with a second pair of
+eyes that did not write the prompt, on a different model from the one that did.
 
 ## Workflow
 
-1. Run the gate with the shot's references and its storyboard `must_show`:
+1. Gate every frame against the approved product hero still and the storyboard's `must_show`:
 
    ```bash
    cineloom qa --project <id> --shot 1 --frame projects/<id>/frames/shot_001.png \
-     --ref projects/<id>/refs/can_front.png --expect "the can with its label readable"
+     --ref projects/<id>/refs/product.png --expect "the can upright in ice with its label readable"
    ```
 
-   The StepFun vision model (local) returns `{"pass", "score", "issues"}`; the report is saved to `reports/qa_1.json`. Exit code 1 means rejected.
-2. On rejection, change the prompt according to the issues before regenerating - the same prompt mostly fails the same way:
-   - product mismatch -> add or reorder references, product first; describe label colour and shape in words
-   - warped text -> shorten the text, or drop it from the image and add it as a subtitle at the cut
-   - anatomy -> reframe so hands are not the subject, or change the action
+   The local StepFun vision model returns `{"pass", "score", "issues"}`; the report is saved to `reports/qa_1.json`. Exit code 1 means rejected.
+2. Reject on any one of these, whatever the score:
+   - the required content is missing;
+   - the product is a different product from the hero still: container type, main colours or brand lettering. Condensation, lighting, angle, scale and fine print are expected to change and are not grounds;
+   - any text outside the product label - captions, slogans, numbers, lens specs, watermarks - or any garbled or duplicated lettering;
+   - a person, hand or fingers in a shot that does not call for them; extra limbs, malformed hands, a distorted face;
+   - the product cropped, floating, physically implausible, or a drink that should be clear in an odd colour.
+3. With several candidates for a shot, keep the passing one with the highest score.
+4. When every candidate is rejected, change the prompt according to the issue before regenerating - the same prompt mostly fails the same way:
+   - product mismatch -> restate that image 1 is the product and that its label must not change; simplify the scene around it
+   - stray text -> remove whatever in the prompt reads like a caption, a number or a spec
+   - unwanted hands or people -> reframe as a product-only composition
    - missing content -> move it to the front of the prompt
-3. At most two regenerations per shot. Then keep the highest-scoring attempt and note the open issue for the delivery report.
-4. Record the pass rate and regeneration count across the project; they are the evidence that the loop works.
+5. At most two regenerations per shot. Then keep the best attempt and note the open issue for the delivery report.
+6. If the vision model cannot return a verdict, retry once with a larger token budget. If it still cannot, accept the frame **marked as unverified** and say so in the delivery report. The gate must never take the whole film down, and it must never claim a check it did not make.
+7. Record pass rate and regeneration count across the project; they are the evidence that the loop works.
 
 ## Limits
 
-The vision model judges what is visible in one frame. It does not see motion, and it can
-miss small logo errors. For hero product shots, show the frame to the user as well.
+The vision model judges one frame. It does not see motion, it can miss small logo errors,
+and it always reasons before answering, so give it at least 3500 output tokens. For hero
+product shots, show the frame to the user as well.

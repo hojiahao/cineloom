@@ -5,6 +5,8 @@ export interface TitleCue {
   end: number
   title?: string
   subtitle?: string
+  /** The closing line on the end card: larger than a subtitle, set low so it never covers the product. */
+  closing?: string
 }
 
 const assTime = (seconds: number) => {
@@ -19,6 +21,7 @@ export function buildAss(cues: TitleCue[], width: number, height: number, font =
   const portrait = height > width
   const titleSize = Math.round(height * (portrait ? 0.058 : 0.085))
   const subtitleSize = Math.round(height * (portrait ? 0.026 : 0.042))
+  const closingSize = Math.round(height * (portrait ? 0.04 : 0.064))
   const lines = [
     '[Script Info]', 'ScriptType: v4.00+', `PlayResX: ${width}`, `PlayResY: ${height}`, 'WrapStyle: 2', 'ScaledBorderAndShadow: yes', '',
     '[V4+ Styles]',
@@ -26,10 +29,12 @@ export function buildAss(cues: TitleCue[], width: number, height: number, font =
     // Title: heavy, letter-spaced, soft shadow, upper third. Subtitle: light outline, bottom.
     `Style: Title,${font},${titleSize},&H00FFFFFF,&H00FFFFFF,&H64000000,&H96000000,1,0,0,0,100,100,${Math.round(titleSize * 0.18)},0,1,0,${Math.round(titleSize * 0.06)},8,60,60,${Math.round(height * (portrait ? 0.14 : 0.1))},1`,
     `Style: Sub,${font},${subtitleSize},&H00FFFFFF,&H00FFFFFF,&HB4000000,&H00000000,0,0,0,0,100,100,${Math.round(subtitleSize * 0.06)},0,1,${Math.max(1, Math.round(subtitleSize * 0.07))},0,2,60,60,${Math.round(height * (portrait ? 0.09 : 0.07))},1`,
+    `Style: Closing,${font},${closingSize},&H00FFFFFF,&H00FFFFFF,&H64000000,&H96000000,1,0,0,0,100,100,${Math.round(closingSize * 0.22)},0,1,0,${Math.round(closingSize * 0.07)},2,60,60,${Math.round(height * (portrait ? 0.085 : 0.075))},1`,
     '', '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
   ]
   for (const cue of cues) {
     if (cue.title?.trim()) lines.push(`Dialogue: 1,${assTime(cue.start + 0.5)},${assTime(cue.end - 0.4)},Title,,0,0,0,,{\\fad(450,350)\\blur0.6}${clean(cue.title)}`)
+    if (cue.closing?.trim()) lines.push(`Dialogue: 1,${assTime(cue.start + 0.6)},${assTime(cue.end - 0.1)},Closing,,0,0,0,,{\\fad(500,300)\\blur0.5}${clean(cue.closing)}`)
     if (cue.subtitle?.trim()) lines.push(`Dialogue: 0,${assTime(cue.start + 0.25)},${assTime(cue.end - 0.15)},Sub,,0,0,0,,{\\fad(200,200)}${clean(cue.subtitle)}`)
   }
   return `${lines.join('\n')}\n`

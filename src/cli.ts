@@ -18,7 +18,7 @@ const HELP = `CineLoom - agentic ad-film studio for a single DGX Spark
   cineloom image --prompt <text> [--size 1328x1328] [--ref img ...] [--project id --shot n | --out file]
   cineloom video --prompt <text> [--first-frame img] [--duration 5] [--ratio 9:16] [--resolution 720p] [--project id --shot n | --out file]
   cineloom qa --frame <img> [--ref img ...] [--expect text] [--project id --shot n]
-  cineloom cut --project <id> [--audio file] [--subtitles file.srt]
+  cineloom cut --project <id> [--audio file] [--silent]            re-run end card, titles, sound and grade
   cineloom mem <status|plan|free> [--need name=GB ...]
   cineloom doctor
   cineloom studio [--port 3090] [--host 127.0.0.1]
