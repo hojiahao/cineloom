@@ -54,8 +54,8 @@ budget first, then start things.
 
 | Service | Planned | Notes |
 |---|---:|---|
-| Nemotron 3.5 Lightning 30B-A3B NVFP4 | 30 GB | 21.6 GB weights + fp8 KV, 64K context |
-| Step3-VL-10B FP8 | 20 GB | 15.1 GB weights + KV, 32K context |
+| Nemotron 3.5 Lightning 30B-A3B NVFP4 | 35 GB | measured on GB10 at 0.25 of the pool, 64K context |
+| Step3-VL-10B FP8 | 24 GB | measured: 14.25 GiB weights; 0.20 of the pool gives a 47,616-token KV cache |
 | ComfyUI, Qwen-Image fp8 | 32 GB | 20.4 GB model + 9.4 GB text encoder |
 | ComfyUI, Wan2.2 TI2V-5B | 20 GB | 10 GB model + 6.7 GB text encoder + activations |
 | OS, CineLoom, reserve | 15 GB | |

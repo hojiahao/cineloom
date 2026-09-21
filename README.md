@@ -119,10 +119,24 @@ npx @deepseek-ai/dsh web      # 设置 → 模型 → 添加自定义提供方
 | NVFP4 量化 | Nemotron 3.5 Lightning 30B-A3B 用官方 NVFP4 权重，21.6 GB | 30B 参数只激活 3B，GB10 的内存带宽是瓶颈，权重越小解码越快 |
 | 投机解码 | 搭配官方 `-DSpark` 草稿权重，`num_speculative_tokens=3` | NVIDIA 为 DGX Spark 低并发场景调优的方案，无损加速 |
 | FP8 KV cache 与前缀缓存 | `--kv-cache-dtype fp8 --enable-prefix-caching` | 导演智能体每轮都带同一段系统提示和 Skill，前缀命中率高 |
-| FP8 视觉模型 | Step3-VL-10B-FP8，15.1 GB | 质检要常驻，体积必须小 |
+| FP8 视觉模型 | Step3-VL-10B-FP8，15.1 GB；设 `VLLM_USE_DEEP_GEMM=0` | 质检要常驻，体积必须小。DeepGEMM 的 FP8 内核在 GB10 上断言失败，改走 vLLM 通用 FP8 路径 |
 | 8 步蒸馏 LoRA | Qwen-Image + Lightning 8-step，cfg 1 | 把单张首帧压到可以反复重生成的量级 |
 | 原生分辨率预算 | 超过 1328×1328 像素总量的请求先按预算生成再放大 | 扩散耗时随像素数增长，预算内生成、Lanczos 放大 |
-| 分阶段显存调度 | vLLM 按总内存池比例预占（0.25 + 0.17），扩散模型按需加载，视频阶段结束调用 ComfyUI `/free` | 一个内存池，先常驻后按需 |
+| 分阶段显存调度 | vLLM 按总内存池比例预占（0.25 + 0.20），扩散模型按需加载，视频阶段结束调用 ComfyUI `/free` | 一个内存池，先常驻后按需 |
+
+**本机实测（2026-09-21，DGX Spark，单请求）**
+
+| 项目 | 实测值 |
+|---|---|
+| Nemotron 3.5 Lightning 解码速度（含 DSpark 投机解码，端到端） | 98–106 tok/s（900 token，两次） |
+| Nemotron 工具调用一次往返 | 1.0 s，参数正确 |
+| Nemotron 服务占用统一内存 | 约 35 GB（可用内存 108.6 → 73.6 GB） |
+| Step3-VL-10B 权重加载 | 14.25 GiB，81.9 s |
+| Step3-VL-10B KV cache（内存比例 0.20） | 47,616 token，32K 上下文可用 |
+| 两个 LLM 同时常驻后的可用统一内存 | 47.6 GB |
+| `cineloom qa` 单张首帧质检 | 首次 26 s（含预热），之后 10 s |
+
+Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太小时正文会为空。
 
 启动参数取自各模型卡的 DGX Spark 配方，完整写在 [`deploy/spark/compose.yaml`](deploy/spark/compose.yaml)。
 
@@ -191,7 +205,9 @@ npx @deepseek-ai/dsh web      # 设置 → 模型 → 添加自定义提供方
 - [x] `cineloom` CLI 全部 10 个子命令，16 个测试通过；端到端测试走真实 ffmpeg，ComfyUI 用桩服务
 - [x] 在本机 DGX Spark 上实测：`mem status` / `mem plan`、参考片切镜、合规扫描、Studio 看板
 - [x] 9 个 Skill 与 20 条评测任务；Nemotron、DSpark 权重已下载
-- [ ] vLLM 镜像与其余权重就位后，在 Spark 上真实启动三个服务并通过 `cineloom doctor`
+- [x] Nemotron 与 Step3-VL 已在本机 DGX Spark 上由 vLLM 真实启动；全部权重（约 109 GB）已下载
+- [x] `cineloom qa` 在本地 Step3-VL 上真实跑通：符合要求的图 90 分通过，不符合的 30 分拒绝并指出缺失内容
+- [ ] 启动 ComfyUI 并通过 `cineloom doctor`
 - [ ] DeepSeek Harness 经自定义提供方接本地模型的完整链路
 - [ ] 第一支真实成片，以及每个阶段的实测耗时和峰值内存
 - [ ] “带 / 不带 Skill”对比评测，结果写入各 Skill 的 `BENCHMARK.md`

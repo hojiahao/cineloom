@@ -21,4 +21,13 @@
 
 **实测数据。** 本机统一内存 121.7 GB；内存预算 Nemotron 30 + Step3-VL 20 + ComfyUI 45 = 95 GB，预留 10 GB 后余量 16.7 GB。
 
-**明天。** 在 Spark 上真实启动 vLLM 和 ComfyUI，过 `cineloom doctor`；接通 Harness 到本地模型；生成第一张首帧并记录耗时。
+**下午：两个模型在 Spark 上真实跑起来。**
+- 本机 Docker 通过 CDI（`nvidia.com/gpu=all`）暴露 GPU，没有注册 `nvidia` 运行时，compose 里的 `runtime: nvidia` 直接报错，改成 CDI 设备声明。
+- Nemotron 一次启动成功。实测端到端解码 98–106 tok/s，工具调用 1.0 s 且参数正确；服务实占约 35 GB，比计划的 30 GB 多，预算表按实测改。900 个 token 全部用在推理上、正文为空，说明 `max_tokens` 要给够。
+- Step3-VL-10B-FP8 连续崩溃重启。第一层原因是 DeepGEMM 的 FP8 内核在 GB10 上断言失败（Unknown SF transformation），设 `VLLM_USE_DEEP_GEMM=0` 解决。第二层原因是我给的内存比例 0.17 只剩约 2 GiB 给 KV cache。先试着降上下文长度，降了两次都差一点，方向错了；改成把比例提到 0.20，KV cache 47,616 token，32K 上下文保住。
+- `cineloom qa` 在本地 Step3-VL 上跑通：同一张图，要求相符给 90 分通过，要求不符给 30 分拒绝并说出缺了什么。首次 26 s，之后 10 s。
+- 两个 LLM 常驻后可用统一内存 47.6 GB，够扩散模型用。
+
+**README。** 横幅改成 ANSI Shadow 方块字，方块画成矩形、文字转成 Google Sans Code 轮廓，不依赖访问者字体。架构图用 archify 生成，showcase 档 9/9 通过；横向五列放进 README 后字太小，改成竖向主线。截图时抹像素去工具栏连错两次，最后改为在临时副本里用 CSS 隐藏控件。
+
+**明天。** 启动 ComfyUI，过 `cineloom doctor`；生成第一张首帧和第一段视频并记录耗时；接通 Harness 到本地模型。
