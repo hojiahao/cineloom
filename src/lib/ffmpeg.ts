@@ -62,3 +62,62 @@ export async function concatCopy(segments: string[], output: string): Promise<vo
   await writeFile(listing, segments.map((segment) => `file '${segment}'\n`).join(''))
   await exec('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', listing, '-c', 'copy', output])
 }
+
+export interface FilmOptions {
+  width: number
+  height: number
+  fps: number
+  clipSeconds: number
+  crossfadeSeconds: number
+  ass?: string
+  audio?: string
+  audioGainDb?: number
+}
+
+/** Seconds at which clip `index` starts on the final timeline, given crossfades between clips. */
+export const clipStart = (index: number, clipSeconds: number, crossfadeSeconds: number) => index * (clipSeconds - crossfadeSeconds)
+
+/**
+ * Finishing pass: conform every clip, crossfade between them, then grade the whole film as
+ * one image - gentle contrast, a teal/warm split, sharpening, fine grain, vignette, fades -
+ * and burn in typography. Grading after the join keeps shots from different generations
+ * looking like one film.
+ */
+export async function assembleFilm(clips: string[], output: string, options: FilmOptions): Promise<void> {
+  const { width, height, fps, clipSeconds, crossfadeSeconds } = options
+  const conform = clips
+    .map((_, index) => `[${index}:v]scale=${width}:${height}:force_original_aspect_ratio=increase:flags=lanczos,crop=${width}:${height},setsar=1,fps=${fps},trim=duration=${clipSeconds},setpts=PTS-STARTPTS,format=yuv420p[c${index}]`)
+    .join(';')
+  let chain = conform
+  let last = '[c0]'
+  for (let index = 1; index < clips.length; index++) {
+    const label = `[x${index}]`
+    chain += `;${last}[c${index}]xfade=transition=fade:duration=${crossfadeSeconds}:offset=${clipStart(index, clipSeconds, crossfadeSeconds).toFixed(3)}${label}`
+    last = label
+  }
+  const total = clipStart(clips.length - 1, clipSeconds, crossfadeSeconds) + clipSeconds
+  const grade = [
+    'eq=contrast=1.07:saturation=1.10:gamma=0.98',
+    'colorbalance=rs=0.04:gs=0.01:bs=-0.03:rh=-0.02:bh=0.04',
+    'unsharp=5:5:0.5:5:5:0.0',
+    'noise=alls=5:allf=t+u',
+    'vignette=PI/5.5',
+    `fade=t=in:st=0:d=0.35,fade=t=out:st=${(total - 0.5).toFixed(3)}:d=0.5`,
+  ].join(',')
+  chain += `;${last}${grade}[graded]`
+  let videoLabel = '[graded]'
+  if (options.ass) {
+    const escaped = options.ass.replace(/\\/g, '/').replace(/:/g, '\\:').replace(/'/g, "\\'")
+    chain += `;[graded]ass='${escaped}'[titled]`
+    videoLabel = '[titled]'
+  }
+  const args = ['-hide_banner', '-loglevel', 'error', '-y', ...clips.flatMap((clip) => ['-i', clip])]
+  if (options.audio) {
+    args.push('-i', options.audio)
+    chain += `;[${clips.length}:a]volume=${options.audioGainDb ?? -10}dB,afade=t=out:st=${(total - 1).toFixed(3)}:d=1[music]`
+  }
+  args.push('-filter_complex', chain, '-map', videoLabel)
+  if (options.audio) args.push('-map', '[music]', '-shortest', '-c:a', 'aac', '-b:a', '192k')
+  args.push('-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', output)
+  await exec('ffmpeg', args)
+}

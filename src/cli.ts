@@ -4,6 +4,7 @@ import { parseArgs, UsageError } from './lib/args.js'
 
 const HELP = `CineLoom - agentic ad-film studio for a single DGX Spark
 
+  cineloom direct "<brief>" [--id id] [--ratio 9:16] [--duration 15] [--plan-only]
   cineloom project init --id <id> --brief <text> [--title] [--ratio 9:16] [--duration 15]
   cineloom project status --id <id>
   cineloom project stage --id <id> --stage <stage> --status <pending|running|done|failed> [--note]

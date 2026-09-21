@@ -76,3 +76,57 @@ describe('helpers', () => {
     expect(extractJson('好的：\n```json\n{"pass": false, "score": 40, "issues": ["logo warped"]}\n```')).toEqual({ pass: false, score: 40, issues: ['logo warped'] })
   })
 })
+
+import { checkScript, checkStoryboard, spokenLength, type Brief, type Script } from '../src/agent/checks.js'
+
+describe('skill checks (shared by the director and the evals)', () => {
+  const brief = { id: 'soda', title: '气泡水', product: 'sparkling water', category: 'food', audience: 'students', message: '0糖也有爽感', ratio: '9:16', durationSeconds: 15, tone: 'fresh', brandText: '冷' } as Brief
+  const beat = (n: number, vo: string, text = '') => ({ beat: n, job: 'hook', see: 'a can on ice', vo, text })
+  const good: Script = { structure: 'sensory close-ups -> reveal', beats: [beat(1, '冰块碰撞，夏天就此开罐'), beat(2, '零糖零脂，气泡却更足'), beat(3, '先冷一下，我们再出发', '冷一下')] }
+
+  it('accepts a script that follows the skill', () => expect(checkScript(good, brief)).toEqual([]))
+  it('counts spoken characters without punctuation', () => expect(spokenLength('冰块碰撞，夏天开罐！')).toBe(8))
+  it('rejects the wrong beat count, long voiceover and restricted wording', () => {
+    const problems = checkScript({ structure: 'x', beats: [beat(1, '这是一句明显超过十八个字的口播文案它真的太长了读不完'), beat(2, '全网第一的气泡水')] }, brief)
+    expect(problems.some((problem) => problem.includes('exactly 3 beats'))).toBe(true)
+    expect(problems.some((problem) => problem.includes('at most 18'))).toBe(true)
+    expect(problems.some((problem) => problem.includes('全网第一'))).toBe(true)
+  })
+  it('requires the style line verbatim, English prompts and one camera move', () => {
+    const style = 'soft morning light, 50mm'
+    const shot = { shot: 1, seconds: 5, framing: 'close-up', camera: 'slow push-in', image_prompt: `A can labelled "冷" on ice, ${style}`, video_prompt: 'Slow push-in.', on_screen_text: '', must_show: 'the can' }
+    const script3 = { ...good, beats: [good.beats[0]!] }
+    expect(checkStoryboard({ style, product: 'a slim aluminium can with a teal band that reads "冷"', shots: [shot] }, script3)).toEqual([])
+    const bad = { ...shot, camera: 'push-in, then pan', image_prompt: '一罐气泡水' }
+    const problems = checkStoryboard({ style, product: 'a can', shots: [bad] }, script3)
+    expect(problems).toHaveLength(2)
+  })
+})
+
+import { composeImagePrompt, composeProductPrompt, sanitizeStyle } from '../src/agent/checks.js'
+import { clipStart } from '../src/lib/ffmpeg.js'
+import { buildAss } from '../src/lib/titles.js'
+
+describe('prompt composition and finishing', () => {
+  const storyboard = { style: 'soft morning light, 50mm, f/2.8, shallow depth of field, 4k', product: 'a slim silver can whose label reads "冷".', shots: [] }
+  const shot = { shot: 1, seconds: 5, framing: 'macro', camera: 'slow push-in', image_prompt: 'Macro of the product on crushed ice.', video_prompt: 'x', on_screen_text: '', must_show: 'the can' }
+
+  it('strips lens specs that the image model would paint as text', () => {
+    expect(sanitizeStyle(storyboard.style)).toBe('soft morning light, shallow depth of field')
+  })
+  it('anchors reference shots to image 1 and always forbids stray text', () => {
+    const anchored = composeImagePrompt(shot, storyboard, true)
+    expect(anchored).toContain('exactly as in image 1')
+    expect(anchored).not.toContain('50mm')
+    expect(anchored).toMatch(/no lettering anywhere except the label/)
+    expect(composeImagePrompt(shot, storyboard)).toContain('The product: a slim silver can')
+    expect(composeProductPrompt(storyboard)).toMatch(/^Studio product photograph of a slim silver can/)
+  })
+  it('places clips and titles on the crossfaded timeline', () => {
+    expect(clipStart(2, 5, 0.4)).toBeCloseTo(9.2)
+    const ass = buildAss([{ start: 4.6, end: 9.6, title: '0糖', subtitle: '气泡更足{\\b1}' }], 1080, 1920)
+    expect(ass).toContain('PlayResY: 1920')
+    expect(ass).toMatch(/Dialogue: 1,0:00:05\.10,0:00:09\.20,Title/)
+    expect(ass).toContain('气泡更足b1') // override tags from model text are neutralised
+  })
+})

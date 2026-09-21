@@ -3,6 +3,7 @@ import { readdir, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { direct } from '../agent/director.js'
 import { memoryStatus } from '../lib/memory.js'
 import { loadProject, projectsRoot } from '../lib/project.js'
 
@@ -12,7 +13,44 @@ const TYPES: Record<string, string> = {
   '.mp4': 'video/mp4', '.md': 'text/markdown; charset=utf-8', '.srt': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8',
 }
 
-/** Read-only board over the projects folder: pipeline stages, assets, memory. The agent writes, the studio shows. */
+interface Job {
+  brief: string
+  startedAt: string
+  finishedAt?: string
+  status: 'running' | 'done' | 'failed'
+  log: string[]
+  projectId?: string
+  error?: string
+}
+
+// One GPU, one film at a time: a second brief is refused while a job is running.
+let job: Job | undefined
+
+function startJob(input: { brief: string; ratio?: string; durationSeconds?: number; videoModel?: string }): Job {
+  const current: Job = { brief: input.brief, startedAt: new Date().toISOString(), status: 'running', log: [] }
+  job = current
+  direct({
+    brief: input.brief,
+    ratio: input.ratio,
+    durationSeconds: input.durationSeconds,
+    videoModel: input.videoModel as never,
+    log: (line) => current.log.push(`${new Date().toLocaleTimeString('zh-CN', { hour12: false })}  ${line}`),
+  })
+    .then((result) => Object.assign(current, { status: 'done', projectId: result.projectId, finishedAt: new Date().toISOString() }))
+    .catch((error: Error) => Object.assign(current, { status: 'failed', error: error.message, finishedAt: new Date().toISOString() }))
+  return current
+}
+
+async function readJson(request: import('node:http').IncomingMessage): Promise<Record<string, unknown>> {
+  const chunks: Buffer[] = []
+  for await (const chunk of request) {
+    chunks.push(chunk as Buffer)
+    if (chunks.reduce((size, part) => size + part.length, 0) > 64_000) throw new Error('request body too large')
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}') as Record<string, unknown>
+}
+
+/** Board over the projects folder: pipeline stages, assets, memory. The agent writes, the studio shows. */
 export async function startStudio(port: number, host: string): Promise<void> {
   const server = createServer(async (request, response) => {
     try {
@@ -27,6 +65,22 @@ export async function startStudio(port: number, host: string): Promise<void> {
         return send(200, states.filter(Boolean).sort((a, b) => b!.updatedAt.localeCompare(a!.updatedAt)))
       }
       if (url.pathname === '/api/memory') return send(200, await memoryStatus())
+      if (url.pathname === '/api/job' && request.method === 'GET') return send(200, job ?? null)
+      if (url.pathname === '/api/direct' && request.method === 'POST') {
+        // The studio binds to localhost; refuse cross-site form posts all the same.
+        if (!(request.headers['content-type'] ?? '').includes('application/json')) return send(415, { error: 'send application/json' })
+        if (job?.status === 'running') return send(409, { error: '已有一支片子在制作中，请等它完成。' })
+        const body = await readJson(request)
+        const brief = String(body.brief ?? '').trim()
+        if (brief.length < 6 || brief.length > 600) return send(400, { error: '请用 6–600 个字描述你的创意。' })
+        const duration = Number(body.durationSeconds)
+        return send(202, startJob({
+          brief,
+          ratio: ['9:16', '16:9', '1:1'].includes(String(body.ratio)) ? String(body.ratio) : undefined,
+          durationSeconds: [5, 10, 15, 20, 30].includes(duration) ? duration : undefined,
+          videoModel: ['wan22-5b', 'wan22-14b'].includes(String(body.videoModel)) ? String(body.videoModel) : undefined,
+        }))
+      }
 
       const isFile = url.pathname.startsWith('/files/')
       const root = isFile ? projectsRoot() : PUBLIC_DIR

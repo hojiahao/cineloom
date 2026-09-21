@@ -32,6 +32,15 @@
   .final { margin-top:16px } .final video { width:min(100%,420px); border-radius:9px; border:1px solid var(--line) }
   .empty { color:var(--dim); padding:60px 0; text-align:center }
   code { background:#101116; padding:1px 6px; border-radius:4px }
+  .compose { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px }
+  .compose textarea { width:100%; min-height:74px; resize:vertical; background:#101116; color:var(--text); border:1px solid var(--line); border-radius:9px; padding:11px 12px; font:inherit }
+  .compose textarea:focus { outline:none; border-color:var(--gold) }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px }
+  select, button { font:inherit; border-radius:8px; border:1px solid var(--line); background:#101116; color:var(--text); padding:7px 11px }
+  button.go { margin-left:auto; background:var(--gold); color:#16130a; border-color:var(--gold); font-weight:600; padding:8px 20px; cursor:pointer }
+  button.go:disabled { opacity:.45; cursor:not-allowed }
+  .joblog { margin:12px 0 0; padding:11px 13px; background:#0b0c10; border:1px solid var(--line); border-radius:9px; font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace; color:#b9bccb; white-space:pre-wrap; max-height:240px; overflow:auto }
+  .joblog b { color:var(--gold); font-weight:500 } .err { color:var(--bad) }
 </style>
 </head>
 <body>
@@ -39,7 +48,19 @@
   <h1>Cine<span>Loom</span></h1><div class="sub">影织 · 本地成片工作台</div>
   <div class="mem"><span id="memText">统一内存 …</span><div class="bar"><i id="memBar" style="width:0"></i></div></div>
 </header>
-<main id="app"><div class="empty">加载中…</div></main>
+<main>
+  <section class="compose">
+    <textarea id="brief" placeholder="用一两句话说出你的创意，例如：给一款叫“冷”的无糖气泡水做一条 15 秒竖版广告，面向大学生，夏天，清爽"></textarea>
+    <div class="row">
+      <select id="ratio" aria-label="画幅"><option value="">画幅：自动</option><option>9:16</option><option>16:9</option><option>1:1</option></select>
+      <select id="duration" aria-label="时长"><option value="">时长：自动</option><option value="10">10 秒</option><option value="15">15 秒</option><option value="20">20 秒</option></select>
+      <select id="videoModel" aria-label="视频模型"><option value="wan22-14b">Wan2.2 14B · 默认</option><option value="wan22-5b">Wan2.2 5B</option></select>
+      <button class="go" id="go">开拍</button>
+    </div>
+    <div id="job"></div>
+  </section>
+  <div id="app"><div class="empty">加载中…</div></div>
+</main>
 <script>
 const STAGE_NAMES = { brief:'需求', script:'脚本', compliance:'合规', storyboard:'分镜', frames:'生图', qa:'质检', clips:'生视频', cut:'成片' }
 const esc = (text) => String(text ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
@@ -64,6 +85,27 @@ function render(projects) {
       ${final ? `<div class="final"><h3>成片</h3><video src="${fileUrl(project.id, final.path)}" controls></video></div>` : ''}</section>`
   }).join('')
 }
+
+async function refreshJob() {
+  const job = await fetch('/api/job').then((r) => r.json()).catch(() => null)
+  const running = job?.status === 'running'
+  document.getElementById('go').disabled = running
+  document.getElementById('go').textContent = running ? '制作中…' : '开拍'
+  if (!job) return
+  const lines = job.log.map((line) => esc(line).replace(/▸ (\S+)/, '▸ <b>$1</b>')).join('\n')
+  const tail = job.status === 'failed' ? `\n<span class="err">失败：${esc(job.error)}</span>` : job.status === 'done' ? '\n完成 ✓' : ''
+  const box = document.getElementById('job')
+  const html = `<pre class="joblog">${lines}${tail}</pre>`
+  if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; box.firstChild.scrollTop = 1e6 }
+}
+document.getElementById('go').addEventListener('click', async () => {
+  const durationSeconds = Number(document.getElementById('duration').value) || undefined
+  const response = await fetch('/api/direct', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+    brief: document.getElementById('brief').value, ratio: document.getElementById('ratio').value, durationSeconds, videoModel: document.getElementById('videoModel').value }) })
+  if (!response.ok) alert((await response.json()).error)
+  refreshJob()
+})
+setInterval(refreshJob, 2000); refreshJob()
 
 let last = ''
 async function refresh() {

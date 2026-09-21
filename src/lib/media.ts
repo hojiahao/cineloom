@@ -6,6 +6,13 @@ import { concatCopy, extractLastFrame, scaleImage } from './ffmpeg.js'
 
 export const IMAGE_NATIVE_MAX_PIXELS = Number(process.env.CINELOOM_IMAGE_NATIVE_MAX_PIXELS ?? 1328 * 1328)
 export const VIDEO_FPS = 24
+
+export type VideoModel = 'wan22-5b' | 'wan22-14b'
+/** The 14B image-to-video model runs at its native 16 fps and needs a first frame. */
+const VIDEO_MODELS: Record<VideoModel, { fps: number; i2v: string; t2v?: string }> = {
+  'wan22-5b': { fps: 24, i2v: 'wan22_ti2v_5b_i2v', t2v: 'wan22_ti2v_5b_t2v' },
+  'wan22-14b': { fps: 16, i2v: 'wan22_i2v_14b_4step' },
+}
 export const VIDEO_SEGMENT_SECONDS = 5
 
 const VIDEO_SIZES: Record<string, [number, number]> = {
@@ -92,9 +99,13 @@ export async function generateImage(
 
 export async function generateVideo(
   comfy: ComfyClient,
-  request: { prompt: string; output: string; resolution: string; ratio: string; durationSeconds: number; firstFrame?: string; freeAfter?: boolean },
+  request: { prompt: string; output: string; resolution: string; ratio: string; durationSeconds: number; firstFrame?: string; freeAfter?: boolean; model?: VideoModel },
 ): Promise<MediaResult> {
   const started = Date.now()
+  const modelName = request.model ?? (process.env.CINELOOM_VIDEO_MODEL as VideoModel | undefined) ?? 'wan22-5b'
+  const model = VIDEO_MODELS[modelName]
+  if (!model) throw new Error(`Unknown video model ${modelName}; use wan22-5b or wan22-14b.`)
+  if (!model.t2v && !request.firstFrame) throw new Error(`${modelName} is image-to-video only; pass a first frame.`)
   const [width, height] = videoSize(request.resolution, request.ratio)
   const segmentCount = Math.max(1, Math.ceil(request.durationSeconds / VIDEO_SEGMENT_SECONDS))
   await mkdir(dirname(request.output), { recursive: true })
@@ -102,14 +113,14 @@ export async function generateVideo(
   let startFrame = request.firstFrame
   const segments: string[] = []
   for (let index = 0; index < segmentCount; index++) {
-    const workflow = startFrame ? 'wan22_ti2v_5b_i2v' : 'wan22_ti2v_5b_t2v'
+    const workflow = startFrame ? model.i2v : model.t2v!
     const values: Record<string, unknown> = {
       prompt: request.prompt,
       width,
       height,
       // Wan expects 4n+1 frames.
-      length: VIDEO_SEGMENT_SECONDS * VIDEO_FPS + 1,
-      fps: VIDEO_FPS,
+      length: VIDEO_SEGMENT_SECONDS * model.fps + 1,
+      fps: model.fps,
       seed: seed(),
       filename_prefix: `cineloom/${Date.now()}_${index}`,
     }
@@ -130,10 +141,10 @@ export async function generateVideo(
 
   return {
     path: request.output,
-    workflow: 'wan22_ti2v_5b',
+    workflow: model.i2v,
     seconds: (Date.now() - started) / 1000,
     width,
     height,
-    detail: { segments: segmentCount, durationSeconds: segmentCount * VIDEO_SEGMENT_SECONDS, firstFrame: Boolean(request.firstFrame) },
+    detail: { model: modelName, fps: model.fps, segments: segmentCount, durationSeconds: segmentCount * VIDEO_SEGMENT_SECONDS, firstFrame: Boolean(request.firstFrame) },
   }
 }

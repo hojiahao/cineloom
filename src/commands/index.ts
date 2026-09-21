@@ -10,6 +10,7 @@ import { memoryStatus, planMemory } from '../lib/memory.js'
 import { addAsset, createProject, loadProject, projectDir, setStage, STAGES, type Stage, type StageStatus } from '../lib/project.js'
 import { buildShots } from '../lib/shots.js'
 import { askVision, extractJson } from '../lib/vision.js'
+import { direct } from '../agent/director.js'
 import { startStudio } from '../studio/server.js'
 
 export type Command = (args: ParsedArgs) => Promise<number>
@@ -80,6 +81,7 @@ async function video(args: ParsedArgs): Promise<number> {
     durationSeconds: numberFlag(args, 'duration', 5),
     firstFrame: flag(args, 'first-frame'),
     freeAfter: flag(args, 'keep-loaded') !== 'true',
+    model: flag(args, 'model') as never,
   })
   if (id) {
     await addAsset(id, {
@@ -195,7 +197,7 @@ async function cut(args: ParsedArgs): Promise<number> {
 async function doctor(): Promise<number> {
   const info = await new ComfyClient().objectInfo()
   const problems: string[] = []
-  for (const name of ['qwen_image_lightning', 'qwen_image_edit_lightning', 'wan22_ti2v_5b_t2v', 'wan22_ti2v_5b_i2v']) {
+  for (const name of ['qwen_image_lightning', 'qwen_image_edit_lightning', 'wan22_ti2v_5b_t2v', 'wan22_ti2v_5b_i2v', 'wan22_i2v_14b_4step']) {
     const graph = (await loadWorkflow(name)) as Record<string, { class_type: string; inputs: Record<string, unknown> }>
     for (const [nodeId, node] of Object.entries(graph)) {
       if (nodeId.startsWith('_')) continue
@@ -222,4 +224,23 @@ async function studio(args: ParsedArgs): Promise<number> {
   return new Promise(() => {})
 }
 
-export const COMMANDS: Record<string, Command> = { project, image, video, 'copy-check': copyCheck, shots, mem, qa, cut, doctor, studio }
+/** Brief in, finished film out: the director runs every stage with its agents and skills. */
+async function directCommand(args: ParsedArgs): Promise<number> {
+  const brief = args.positionals.join(' ').trim()
+  if (!brief) throw new UsageError('usage: cineloom direct "<brief>" [--id id] [--ratio 9:16] [--duration 15] [--plan-only] [--without-skills]')
+  const result = await direct({
+    brief,
+    id: flag(args, 'id'),
+    ratio: flag(args, 'ratio'),
+    durationSeconds: flag(args, 'duration') ? numberFlag(args, 'duration', 15) : undefined,
+    planOnly: flag(args, 'plan-only') === 'true',
+    withoutSkills: flag(args, 'without-skills') === 'true',
+    resolution: flag(args, 'resolution'),
+    videoModel: flag(args, 'video-model') as never,
+    audio: flag(args, 'audio'),
+  })
+  print(result)
+  return 0
+}
+
+export const COMMANDS: Record<string, Command> = { direct: directCommand, project, image, video, 'copy-check': copyCheck, shots, mem, qa, cut, doctor, studio }
