@@ -4,7 +4,7 @@
 # Memory plan (measure and adjust, see the spark-model-scheduler skill):
 #   nemotron ~30 GB | stepvl ~20 GB | comfyui ~45 GB peak, on demand | OS + CineLoom ~15 GB
 # vLLM's --gpu-memory-utilization is a fraction of the WHOLE pool and is claimed at startup,
-# so the two LLM services stay at or below ~0.42 combined to leave room for diffusion.
+# so the two LLM services stay at or below ~0.45 combined to leave room for diffusion.
 
 name: cineloom
 
@@ -62,6 +62,8 @@ services:
     environment:
       HF_HOME: /models/hf
       HF_HUB_OFFLINE: "1"
+      # DeepGEMM's FP8 kernels assert on GB10 ("Unknown SF transformation"); use vLLM's generic FP8 path.
+      VLLM_USE_DEEP_GEMM: "0"
     volumes:
       - ${SPARK_MODEL_DIR:-/home/orion/models}:/models
     command:
@@ -70,7 +72,7 @@ services:
       - --host=0.0.0.0
       - --port=8000
       - --trust-remote-code
-      - --gpu-memory-utilization=${STEPVL_GPU_MEM:-0.17}
+      - --gpu-memory-utilization=${STEPVL_GPU_MEM:-0.20}
       - --max-model-len=${STEPVL_MAX_LEN:-32768}
       - --limit-mm-per-prompt={"image":12}
       - --reasoning-parser=deepseek_r1
