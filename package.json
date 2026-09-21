@@ -1,0 +1,20 @@
+{
+  "name": "cineloom",
+  "version": "0.1.0",
+  "description": "CineLoom (影织): an agentic ad-film studio that runs on a single NVIDIA DGX Spark.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "bin": { "cineloom": "dist/cli.js" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "studio": "node dist/cli.js studio"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

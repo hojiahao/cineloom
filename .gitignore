@@ -1,0 +1,7 @@
+node_modules/
+dist/
+projects/
+runtime-data/
+deploy/spark/spark.env
+.dsh-home/
+*.log

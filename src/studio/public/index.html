@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CineLoom Studio</title>
+<style>
+  :root { --bg:#0e0f13; --panel:#171920; --line:#272a35; --text:#e9e7e1; --dim:#8d90a0; --gold:#d9b26a; --ok:#6fcf97; --run:#6aa9ff; --bad:#ef6f6f; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 ui-sans-serif,system-ui,"PingFang SC","Noto Sans CJK SC",sans-serif }
+  header { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; padding:22px 16px 14px; max-width:1180px; margin:0 auto }
+  h1 { margin:0; font:600 26px/1 Georgia,"Songti SC",serif; letter-spacing:.5px }
+  h1 span { color:var(--gold) }
+  .sub { color:var(--dim) }
+  .mem { margin-left:auto; min-width:230px; font-size:13px; color:var(--dim) }
+  .bar { height:6px; border-radius:3px; background:var(--line); overflow:hidden; margin-top:5px }
+  .bar i { display:block; height:100%; background:var(--gold) }
+  main { max-width:1180px; margin:0 auto; padding:0 16px 60px }
+  .project { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; margin-top:16px }
+  .project h2 { margin:0 0 2px; font-size:18px }
+  .brief { color:var(--dim); margin:0 0 14px; white-space:pre-wrap }
+  .stages { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px }
+  .stage { padding:4px 11px; border-radius:999px; border:1px solid var(--line); font-size:13px; color:var(--dim) }
+  .stage.done { color:var(--ok); border-color:#2e5b45 } .stage.running { color:var(--run); border-color:#2d4a78 } .stage.failed { color:var(--bad); border-color:#6b3030 }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px }
+  figure { margin:0; background:#101116; border:1px solid var(--line); border-radius:9px; overflow:hidden }
+  figure img, figure video { display:block; width:100%; aspect-ratio:9/12; object-fit:cover; background:#000 }
+  figcaption { padding:8px 10px; font-size:12.5px; color:var(--dim) }
+  figcaption b { color:var(--text); font-weight:500 }
+  .tag { display:inline-block; padding:0 6px; border-radius:4px; font-size:11px; border:1px solid #2e5b45; color:var(--ok) }
+  .tag.cloud { border-color:#6b5a30; color:var(--gold) }
+  .final { margin-top:16px } .final video { width:min(100%,420px); border-radius:9px; border:1px solid var(--line) }
+  .empty { color:var(--dim); padding:60px 0; text-align:center }
+  code { background:#101116; padding:1px 6px; border-radius:4px }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cine<span>Loom</span></h1><div class="sub">影织 · 本地成片工作台</div>
+  <div class="mem"><span id="memText">统一内存 …</span><div class="bar"><i id="memBar" style="width:0"></i></div></div>
+</header>
+<main id="app"><div class="empty">加载中…</div></main>
+<script>
+const STAGE_NAMES = { brief:'需求', script:'脚本', compliance:'合规', storyboard:'分镜', frames:'生图', qa:'质检', clips:'生视频', cut:'成片' }
+const esc = (text) => String(text ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
+const fileUrl = (id, path) => '/files/' + encodeURIComponent(id) + '/' + path.split('/').map(encodeURIComponent).join('/')
+
+function assetCard(project, asset) {
+  const url = fileUrl(project.id, asset.path)
+  const media = asset.kind === 'video' ? `<video src="${url}" controls preload="metadata"></video>` : `<img src="${url}" loading="lazy" alt="">`
+  const where = asset.execution === 'cloud' ? '<span class="tag cloud">云端</span>' : '<span class="tag">Spark 本地</span>'
+  const time = asset.seconds ? ` · ${asset.seconds.toFixed(1)}s` : ''
+  return `<figure>${media}<figcaption><b>${asset.shot ? '镜头 ' + asset.shot : esc(asset.id)}</b> ${where}<br>${esc(asset.model ?? '')}${time}</figcaption></figure>`
+}
+
+function render(projects) {
+  if (projects.length === 0) return '<div class="empty">还没有项目。让 Agent 执行 <code>cineloom project init</code> 开始。</div>'
+  return projects.map((project) => {
+    const stages = Object.entries(project.stages).map(([key, stage]) => `<span class="stage ${stage.status}" title="${esc(stage.note)}">${STAGE_NAMES[key] ?? key}</span>`).join('')
+    const final = project.assets.find((asset) => asset.id === 'final-cut')
+    const shots = project.assets.filter((asset) => asset.id !== 'final-cut' && asset.kind !== 'document').sort((a, b) => (a.shot ?? 0) - (b.shot ?? 0) || a.kind.localeCompare(b.kind))
+    return `<section class="project"><h2>${esc(project.title)}</h2><p class="brief">${esc(project.brief)} · ${esc(project.ratio)} · ${project.durationSeconds}s</p>
+      <div class="stages">${stages}</div><div class="grid">${shots.map((asset) => assetCard(project, asset)).join('')}</div>
+      ${final ? `<div class="final"><h3>成片</h3><video src="${fileUrl(project.id, final.path)}" controls></video></div>` : ''}</section>`
+  }).join('')
+}
+
+let last = ''
+async function refresh() {
+  try {
+    const [projects, memory] = await Promise.all([fetch('/api/projects').then((r) => r.json()), fetch('/api/memory').then((r) => r.json())])
+    const html = render(projects)
+    // Re-rendering replaces <video> elements and would stop playback, so only touch the DOM on change.
+    if (html !== last) { document.getElementById('app').innerHTML = html; last = html }
+    const used = memory.totalGb - memory.availableGb
+    document.getElementById('memText').textContent = `统一内存 ${used.toFixed(1)} / ${memory.totalGb} GB`
+    document.getElementById('memBar').style.width = (used / memory.totalGb * 100).toFixed(1) + '%'
+  } catch (error) { console.error(error) }
+}
+refresh(); setInterval(refresh, 3000)
+</script>
+</body>
+</html>

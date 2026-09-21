@@ -1,0 +1,31 @@
+# DeepSeek Harness provider settings for CineLoom. Merge into $DSH_HOME/settings.yaml,
+# or add the same two providers in the Web UI under Settings -> Models -> Add custom provider.
+# Both endpoints are the local vLLM services from deploy/spark/compose.yaml.
+llm-pi-ai:
+  providers:
+    spark-nemotron:
+      apiKeyEnv: CINELOOM_LOCAL_KEY        # any non-empty value; vLLM does not check it
+      api: openai-completions
+      baseURL: http://127.0.0.1:8001/v1
+      models:
+        - id: nemotron-3.5-lightning
+    spark-stepfun:
+      apiKeyEnv: CINELOOM_LOCAL_KEY
+      api: openai-completions
+      baseURL: http://127.0.0.1:8002/v1
+      models:
+        - id: step3-vl-10b
+          input: [text, image]
+    # Optional cloud route for creative direction. Label its output as cloud.
+    stepfun-cloud:
+      apiKeyEnv: STEPFUN_API_KEY
+      api: openai-completions
+      baseURL: https://api.stepfun.com/v1
+      models:
+        - id: step-3.7-flash
+          input: [text, image]
+
+# The harness uploads session logs alongside DeepSeek requests by default. CineLoom is a
+# local-first studio, so keep this off.
+session-log-deepseek:
+  enabled: false

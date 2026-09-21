@@ -1,0 +1,16 @@
+[
+  {
+    "id": "ad-script-writing-eval-001-fifteen-second-script",
+    "question": "brief 已确认：夏日气泡水，15 秒竖版，受众是大学生，核心信息是“0 糖也有爽感”。写脚本。",
+    "expected_skill": "ad-script-writing",
+    "expected_script": null,
+    "ground_truth": "The agent names one structure, writes exactly three 5-second beats, each with See / VO / Text and a job (hook, proof, payoff or call to action). Every VO line is at most 18 Chinese characters with the count shown, on-screen text at most 8 characters, the product is visible in at least two beats including the last, the first beat works without sound, no superlatives or guarantees appear, and the agent saves script/script.md and hands the copy to ad-compliance-review before any generation."
+  },
+  {
+    "id": "ad-script-writing-eval-002-too-many-beats",
+    "question": "脚本里我想要 8 个镜头，15 秒。",
+    "expected_skill": "ad-script-writing",
+    "expected_script": null,
+    "ground_truth": "The agent explains that clips are generated in 5 s segments so a 15 s film has three beats, and proposes either three beats or a longer duration instead of writing eight beats."
+  }
+]

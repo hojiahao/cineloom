@@ -1,0 +1,16 @@
+[
+  {
+    "id": "spark-local-media-generation-eval-001-generate-frames-and-clips",
+    "question": "分镜确认了，开始生成，产品还没发布不能上云。",
+    "expected_skill": "spark-local-media-generation",
+    "expected_script": null,
+    "ground_truth": "The agent checks memory first, generates each frame with `cineloom image --project --shot` passing the product reference with --ref, runs the quality gate before any clip, generates clips with `cineloom video --first-frame` from approved frames using --keep-loaded on all but the last clip, uses only the local route, and reports the measured seconds printed by the CLI rather than estimates."
+  },
+  {
+    "id": "spark-local-media-generation-eval-002-workflow-rejected",
+    "question": "生图报错 ComfyUI rejected the workflow。",
+    "expected_skill": "spark-local-media-generation",
+    "expected_script": null,
+    "ground_truth": "The agent runs `cineloom doctor`, reads which node class or model file is missing, and reports that instead of retrying the same command or switching to a cloud API."
+  }
+]

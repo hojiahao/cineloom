@@ -1,0 +1,67 @@
+---
+name: spark-model-scheduler
+version: "0.1.0"
+description: Plan and check unified-memory use on a single DGX Spark (GB10, one memory pool shared by CPU and GPU) before starting or switching inference services - LLM, vision model, ComfyUI image or video generation. Use before bringing the stack up, before a video generation stage, when a model load fails or the machine starts swapping, or when the user asks whether a model "fits" next to the others.
+license: MIT
+metadata:
+  author: 方舟团队 (Team Ark)
+  tags:
+    - dgx-spark
+    - unified-memory
+    - vllm
+    - scheduling
+---
+
+# Spark model scheduler
+
+DGX Spark has one ~121 GB pool for the OS, every LLM's weights and KV cache, and every
+diffusion model. A service that loads fine alone can kill another one later. Decide the
+budget first, then start things.
+
+## Workflow
+
+1. Measure before acting:
+
+   ```bash
+   cineloom mem status
+   ```
+
+   It reports total and available unified memory, per-container memory, and ComfyUI's
+   loaded-model state. `nvidia-smi` shows no total on GB10; trust `/proc/meminfo`.
+   Per-container numbers cover host allocations only: CUDA memory is not charged to the
+   container's cgroup, so a vLLM or SGLang container holding 100 GB can show under 5 GB.
+   Use the drop in available memory, not `docker stats`, to size a GPU service.
+2. Check the plan against the budget:
+
+   ```bash
+   cineloom mem plan --need nemotron=30 --need stepvl=20 --need comfyui=45
+   ```
+
+   Exit code 1 means the plan does not fit with the reserve (default 10 GB). Reduce
+   `--gpu-memory-utilization` / `--max-model-len` on the vLLM services, or stage the work.
+3. Stage work by phase when it does not fit at once. The CineLoom pipeline is naturally
+   phased: text planning -> images -> video -> composition. Diffusion memory is only
+   needed in the middle two phases, and the vision model only for breakdown and QA.
+4. Release diffusion memory after the media phase:
+
+   ```bash
+   cineloom mem free
+   ```
+5. Record `cineloom mem status` before and after each phase into `eval/` - these numbers are
+   the platform evidence for the submission. Report measured values only.
+
+## Reference budget (measure and replace)
+
+| Service | Planned | Notes |
+|---|---:|---|
+| Nemotron 3.5 Lightning 30B-A3B NVFP4 | 30 GB | 21.6 GB weights + fp8 KV, 64K context |
+| Step3-VL-10B FP8 | 20 GB | 15.1 GB weights + KV, 32K context |
+| ComfyUI, Qwen-Image fp8 | 32 GB | 20.4 GB model + 9.4 GB text encoder |
+| ComfyUI, Wan2.2 TI2V-5B | 20 GB | 10 GB model + 6.7 GB text encoder + activations |
+| OS, CineLoom, reserve | 15 GB | |
+
+vLLM's `--gpu-memory-utilization` is a fraction of the whole pool and is claimed at
+startup, so start LLM services first and let ComfyUI allocate on demand.
+
+Step-3.7-Flash (198B) needs ~116 GB even at IQ4_XS: it cannot share the machine with
+diffusion. Use it through the StepFun API, or run it alone in a dedicated planning phase.

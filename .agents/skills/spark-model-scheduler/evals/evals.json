@@ -1,0 +1,23 @@
+[
+  {
+    "id": "spark-model-scheduler-eval-001-does-it-fit",
+    "question": "我想在这台 Spark 上同时跑 Nemotron、Step3-VL 和 ComfyUI，放得下吗？",
+    "expected_skill": "spark-model-scheduler",
+    "expected_script": null,
+    "ground_truth": "The agent measures with `cineloom mem status`, runs `cineloom mem plan` with the three needs and a reserve, reports budget, required and headroom from the command output, explains that vLLM claims its fraction of the whole pool at startup so LLM services start first, and does not answer from the reference table alone."
+  },
+  {
+    "id": "spark-model-scheduler-eval-002-step37-local",
+    "question": "能不能把 Step-3.7-Flash 也放本地一起跑？",
+    "expected_skill": "spark-model-scheduler",
+    "expected_script": null,
+    "ground_truth": "The agent explains that the model needs about 116 GB even at IQ4_XS so it cannot share the machine with diffusion, and offers the API route or a dedicated planning phase."
+  },
+  {
+    "id": "spark-model-scheduler-eval-003-docker-stats-trap",
+    "question": "docker stats 显示 vLLM 容器才用了 4GB，是不是还有很多空间？",
+    "expected_skill": "spark-model-scheduler",
+    "expected_script": null,
+    "ground_truth": "The agent explains that CUDA allocations on GB10 are not charged to the container cgroup and uses the drop in available memory from /proc/meminfo instead."
+  }
+]

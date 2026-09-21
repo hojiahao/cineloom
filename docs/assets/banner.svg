@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-label="CineLoom">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0e0f13"/><stop offset="1" stop-color="#1b1d27"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f0d69a"/><stop offset="1" stop-color="#c9953f"/></linearGradient>
+  </defs>
+  <rect width="1200" height="300" rx="18" fill="url(#bg)"/>
+  <!-- warp threads: the loom -->
+  <g stroke="#2a2d3a" stroke-width="1.5">
+    <path d="M70 40V260M110 40V260M150 40V260M190 40V260M230 40V260M270 40V260M310 40V260"/>
+  </g>
+  <!-- weft: film frames woven through the threads -->
+  <g fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round">
+    <path d="M50 95 C110 70 150 120 190 95 S270 70 330 95"/>
+    <path d="M50 150 C110 175 150 125 190 150 S270 175 330 150"/>
+    <path d="M50 205 C110 180 150 230 190 205 S270 180 330 205"/>
+  </g>
+  <g fill="#0e0f13" stroke="url(#gold)" stroke-width="2.5">
+    <rect x="92" y="78" width="36" height="28" rx="4"/><rect x="212" y="78" width="36" height="28" rx="4"/>
+    <rect x="152" y="136" width="36" height="28" rx="4"/><rect x="272" y="136" width="36" height="28" rx="4"/>
+    <rect x="92" y="192" width="36" height="28" rx="4"/><rect x="212" y="192" width="36" height="28" rx="4"/>
+  </g>
+  <text x="390" y="150" font-family="Georgia, 'Times New Roman', serif" font-size="92" font-weight="600" fill="#e9e7e1" letter-spacing="1">Cine<tspan fill="url(#gold)">Loom</tspan></text>
+  <text x="394" y="200" font-family="ui-sans-serif, system-ui, 'PingFang SC', 'Noto Sans CJK SC', sans-serif" font-size="27" fill="#8d90a0" letter-spacing="3">影织 · 把一句创意，织成一支成片</text>
+  <text x="394" y="243" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="17" fill="#6b6e7d">agentic ad-film studio · runs on one NVIDIA DGX Spark</text>
+</svg>

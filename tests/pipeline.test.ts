@@ -1,0 +1,66 @@
+import { execFile } from 'node:child_process'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { promisify } from 'node:util'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { startFakeComfy } from './fake-comfy.js'
+
+const run = promisify(execFile)
+let fake: Awaited<ReturnType<typeof startFakeComfy>>
+const projects = mkdtempSync(join(tmpdir(), 'cineloom-projects-'))
+
+/** Runs the built CLI as the agent would: a separate process, configured by environment. */
+async function cineloom(...args: string[]) {
+  const { stdout } = await run('node', ['dist/cli.js', ...args], { env: { ...process.env, COMFYUI_URL: fake.url, CINELOOM_PROJECTS: projects } })
+  return JSON.parse(stdout)
+}
+
+beforeAll(async () => { fake = await startFakeComfy() })
+afterAll(() => fake.close())
+
+describe('brief to final cut through the CLI', () => {
+  it('runs project -> frames -> clips -> cut and records every asset', async () => {
+    await cineloom('project', 'init', '--id', 'soda', '--brief', '夏日气泡水 15 秒竖版', '--ratio', '9:16')
+
+    const frame = await cineloom('image', '--project', 'soda', '--shot', '1', '--prompt', 'a can on ice', '--size', '1080x1920')
+    expect(frame.detail.upscaled).toBe(true)
+    expect([frame.width, frame.height]).toEqual([1080, 1920])
+    expect(fake.graphs[0]!['8'].inputs.width * fake.graphs[0]!['8'].inputs.height).toBeLessThanOrEqual(1328 * 1328)
+
+    // A reference switches to the edit graph and fills all three slots.
+    await cineloom('image', '--project', 'soda', '--shot', '2', '--prompt', 'can on a beach', '--size', '704x1280', '--ref', frame.path)
+    expect(fake.graphs[1]!['6'].class_type).toBe('TextEncodeQwenImageEditPlus')
+
+    const clip = await cineloom('video', '--project', 'soda', '--shot', '1', '--prompt', 'slow push-in', '--first-frame', frame.path, '--duration', '10')
+    expect(clip.detail.segments).toBe(2)
+    expect(fake.graphs[2]!['20'].class_type).toBe('LoadImage')
+    expect(fake.graphs[3]!['20'].class_type).toBe('LoadImage') // second segment continues from the last frame
+    expect(fake.freed()).toBe(1)
+
+    await cineloom('video', '--project', 'soda', '--shot', '2', '--prompt', 'waves', '--duration', '5')
+    expect(fake.graphs[4]!['20']).toBeUndefined() // no first frame -> text-to-video graph
+
+    const cut = await cineloom('cut', '--project', 'soda')
+    expect(cut.clips).toBe(2)
+    expect(cut.duration).toBeGreaterThan(2.5)
+
+    const state = await cineloom('project', 'status', '--id', 'soda')
+    expect(state.stages.cut.status).toBe('done')
+    expect(state.assets.map((asset: any) => asset.id).sort()).toEqual(['clip-1', 'clip-2', 'final-cut', 'frame-1', 'frame-2'])
+    expect(state.assets.every((asset: any) => asset.execution === 'local-dgx-spark' && !asset.path.startsWith('/'))).toBe(true)
+  })
+
+  it('splits a reference video into shots', async () => {
+    const video = join(projects, 'ref.mp4')
+    await run('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'color=c=red:s=320x240:d=2', '-f', 'lavfi', '-i', 'testsrc=s=320x240:d=3', '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1.5', '-filter_complex', '[0][1][2]concat=n=3:v=1', video])
+    expect(await cineloom('shots', video, '--out', join(projects, 'breakdown'))).toMatchObject({ shotCount: 3, duration: 6.52 })
+  })
+
+  it('exits 1 on blocked copy and 0 on clean copy', async () => {
+    const bad = join(projects, 'bad.txt'); writeFileSync(bad, '全网第一')
+    await expect(cineloom('copy-check', bad)).rejects.toMatchObject({ code: 1 })
+    const good = join(projects, 'good.txt'); writeFileSync(good, '清爽气泡，夏日畅饮')
+    expect((await cineloom('copy-check', good)).verdict).toBe('pass')
+  })
+})

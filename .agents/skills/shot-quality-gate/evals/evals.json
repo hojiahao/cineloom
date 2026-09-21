@@ -1,0 +1,16 @@
+[
+  {
+    "id": "shot-quality-gate-eval-001-reject-and-fix",
+    "question": "镜头 1 的图出来了，检查一下能不能拿去生视频。",
+    "expected_skill": "shot-quality-gate",
+    "expected_script": null,
+    "ground_truth": "The agent runs `cineloom qa` with the shot's references and its storyboard must_show as --expect, reads pass, score and issues, and on rejection changes the prompt according to the issue type before regenerating (references first for product mismatch, shorter text or subtitle for warped text), with at most two regenerations."
+  },
+  {
+    "id": "shot-quality-gate-eval-002-third-failure",
+    "question": "同一个镜头已经重生成两次还是不过。",
+    "expected_skill": "shot-quality-gate",
+    "expected_script": null,
+    "ground_truth": "The agent stops regenerating, keeps the highest scoring attempt, records the open issue for the delivery report, and continues with the remaining shots."
+  }
+]

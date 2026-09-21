@@ -1,0 +1,16 @@
+[
+  {
+    "id": "ad-brief-intake-eval-001-new-ad-request",
+    "question": "帮我给一款还没发布的无糖气泡水做一条抖音广告，我有三张产品图。",
+    "expected_skill": "ad-brief-intake",
+    "expected_script": null,
+    "ground_truth": "The agent asks only for the blocking unknowns it cannot infer (audience, single message) in one message and does not re-ask the product or platform. It decides ratio 9:16 and a 15 s duration itself and states the choice, picks compliance category `food`, runs `cineloom project init` with a lowercase dashed id, writes brief.md with the listed fields, lists the three reference images under refs/, and records delivery route `local only` because the product is unreleased."
+  },
+  {
+    "id": "ad-brief-intake-eval-002-duration-change",
+    "question": "把刚才那个项目改成 10 秒横版。",
+    "expected_skill": "ad-brief-intake",
+    "expected_script": null,
+    "ground_truth": "The agent updates the existing project brief to 16:9 and 10 s (a multiple of 5 s), states that this means two beats, and does not open a second project or re-ask already known fields."
+  }
+]

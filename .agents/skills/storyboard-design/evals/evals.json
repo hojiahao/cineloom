@@ -1,0 +1,16 @@
+[
+  {
+    "id": "storyboard-design-eval-001-script-to-storyboard",
+    "question": "脚本过审了，出分镜。",
+    "expected_skill": "storyboard-design",
+    "expected_script": null,
+    "ground_truth": "The agent writes one style line and repeats it verbatim in every image prompt, produces one shot per 5 s beat with framing, exactly one camera move, an English image prompt with subject first and quoted on-screen text with its position, a separate video prompt that describes motion only, product references first with at most three per shot, a visible must_show, and saves storyboard/storyboard.json in the documented schema."
+  },
+  {
+    "id": "storyboard-design-eval-002-two-actions",
+    "question": "第二个镜头我想要模特先开罐再喝一口再对镜头笑。",
+    "expected_skill": "storyboard-design",
+    "expected_script": null,
+    "ground_truth": "The agent explains that the video model follows one action per segment and splits the request into separate shots or picks one action, instead of putting three actions in one video prompt."
+  }
+]
