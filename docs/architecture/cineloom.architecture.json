@@ -13,7 +13,7 @@
           "label": "用户"
         },
         "backend": {
-          "label": "CineLoom 运行时"
+          "label": "CineLoom Harness"
         },
         "frontend": {
           "label": "技能与界面"
@@ -63,7 +63,7 @@
       "id": "director",
       "type": "backend",
       "label": "导演智能体",
-      "sublabel": "cineloom direct",
+      "sublabel": "cineloom harness",
       "pos": [
         240,
         170

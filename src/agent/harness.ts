@@ -12,7 +12,7 @@ import { chatJson, endpoints, type ModelEndpoint } from './llm.js'
 import { agentSystem, scriptUser, storyboardUser } from './prompts.js'
 import { loadRules, loadSkill } from './skills.js'
 
-export interface DirectOptions {
+export interface HarnessOptions {
   brief: string
   id?: string
   ratio?: string
@@ -28,7 +28,7 @@ export interface DirectOptions {
   log?: (line: string) => void
 }
 
-export interface DirectResult {
+export interface HarnessResult {
   projectId: string
   dir: string
   finalCut?: string
@@ -49,10 +49,11 @@ interface QaVerdict {
 }
 
 /**
- * The director: eight stages in a fixed order, each handed to an agent that works under
- * one skill. Code owns the order and the acceptance checks; models own the judgement.
+ * CineLoom Harness: the runtime that hosts the director and its sub-agents. Eight stages in
+ * a fixed order, each handed to an agent that works under one skill. Code owns the order and
+ * the acceptance checks; models own the judgement.
  */
-export async function direct(options: DirectOptions): Promise<DirectResult> {
+export async function runHarness(options: HarnessOptions): Promise<HarnessResult> {
   const started = Date.now()
   const log = options.log ?? ((line: string) => console.error(line))
   const { planner, reviewer, editor } = endpoints()
@@ -171,7 +172,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   await record('storyboard', 'storyboard', planner, { seconds: storyboardRun.seconds, attempts: storyboardRun.attempts, rejected: storyboardRun.rejected })
   await setStage(brief.id, 'storyboard', 'done', `${storyboard.shots.length} shots`)
 
-  const result: DirectResult = { projectId: brief.id, dir, rejectedAttempts, qaRegenerations: 0, wallSeconds: 0 }
+  const result: HarnessResult = { projectId: brief.id, dir, rejectedAttempts, qaRegenerations: 0, wallSeconds: 0 }
   if (options.planOnly) {
     result.wallSeconds = (Date.now() - started) / 1000
     return result
@@ -268,7 +269,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
 /**
  * Phase boundary on a machine with one memory pool: the two LLM services stay resident, but
  * only one diffusion family should. Unload whatever the previous phase left in ComfyUI and
- * record memory, which is the spark-model-scheduler skill carried out by the runtime.
+ * record memory, which is the spark-model-scheduler skill carried out by the harness.
  */
 async function enterPhase(comfy: ComfyClient, phase: string, record: (stage: 'run', agent: string, endpoint: undefined, detail: Record<string, unknown>) => Promise<void>): Promise<void> {
   const before = await memoryStatus()

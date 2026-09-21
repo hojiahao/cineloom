@@ -4,7 +4,11 @@ import { parseArgs, UsageError } from './lib/args.js'
 
 const HELP = `CineLoom - agentic ad-film studio for a single DGX Spark
 
-  cineloom direct "<brief>" [--id id] [--ratio 9:16] [--duration 15] [--plan-only]
+  CineLoom Harness: one brief in, one finished film out
+
+  cineloom harness "<brief>" [--id id] [--ratio 9:16] [--duration 15] [--plan-only] [--video-model wan22-14b|wan22-5b]
+
+  Individual tools, as the skills call them
   cineloom eval [--briefs eval/briefs.json] [--repeats 2]      with/without-skill comparison
   cineloom project init --id <id> --brief <text> [--title] [--ratio 9:16] [--duration 15]
   cineloom project status --id <id>

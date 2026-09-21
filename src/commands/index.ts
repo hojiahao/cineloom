@@ -10,7 +10,7 @@ import { memoryStatus, planMemory } from '../lib/memory.js'
 import { addAsset, createProject, loadProject, projectDir, setStage, STAGES, type Stage, type StageStatus } from '../lib/project.js'
 import { buildShots } from '../lib/shots.js'
 import { askVision, extractJson } from '../lib/vision.js'
-import { direct } from '../agent/director.js'
+import { runHarness } from '../agent/harness.js'
 import { runAblation, writeBenchmarks } from '../agent/evals.js'
 import { startStudio } from '../studio/server.js'
 
@@ -225,11 +225,11 @@ async function studio(args: ParsedArgs): Promise<number> {
   return new Promise(() => {})
 }
 
-/** Brief in, finished film out: the director runs every stage with its agents and skills. */
-async function directCommand(args: ParsedArgs): Promise<number> {
+/** Brief in, finished film out: CineLoom Harness runs every stage with its agents and skills. */
+async function harnessCommand(args: ParsedArgs): Promise<number> {
   const brief = args.positionals.join(' ').trim()
-  if (!brief) throw new UsageError('usage: cineloom direct "<brief>" [--id id] [--ratio 9:16] [--duration 15] [--plan-only] [--without-skills]')
-  const result = await direct({
+  if (!brief) throw new UsageError('usage: cineloom harness "<brief>" [--id id] [--ratio 9:16] [--duration 15] [--plan-only] [--without-skills]')
+  const result = await runHarness({
     brief,
     id: flag(args, 'id'),
     ratio: flag(args, 'ratio'),
@@ -254,4 +254,4 @@ async function evalCommand(args: ParsedArgs): Promise<number> {
   return 0
 }
 
-export const COMMANDS: Record<string, Command> = { direct: directCommand, eval: evalCommand, project, image, video, 'copy-check': copyCheck, shots, mem, qa, cut, doctor, studio }
+export const COMMANDS: Record<string, Command> = { harness: harnessCommand, eval: evalCommand, project, image, video, 'copy-check': copyCheck, shots, mem, qa, cut, doctor, studio }

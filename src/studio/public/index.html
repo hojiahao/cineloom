@@ -45,7 +45,7 @@
 </head>
 <body>
 <header>
-  <h1>Cine<span>Loom</span></h1><div class="sub">影织 · 本地成片工作台</div>
+  <h1>Cine<span>Loom</span></h1><div class="sub">影织 · CineLoom Harness 工作台</div>
   <div class="mem"><span id="memText">统一内存 …</span><div class="bar"><i id="memBar" style="width:0"></i></div></div>
 </header>
 <main>
@@ -100,7 +100,7 @@ async function refreshJob() {
 }
 document.getElementById('go').addEventListener('click', async () => {
   const durationSeconds = Number(document.getElementById('duration').value) || undefined
-  const response = await fetch('/api/direct', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+  const response = await fetch('/api/harness', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
     brief: document.getElementById('brief').value, ratio: document.getElementById('ratio').value, durationSeconds, videoModel: document.getElementById('videoModel').value }) })
   if (!response.ok) alert((await response.json()).error)
   refreshJob()

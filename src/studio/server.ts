@@ -3,7 +3,7 @@ import { readdir, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { direct } from '../agent/director.js'
+import { runHarness } from '../agent/harness.js'
 import { memoryStatus } from '../lib/memory.js'
 import { loadProject, projectsRoot } from '../lib/project.js'
 
@@ -29,7 +29,7 @@ let job: Job | undefined
 function startJob(input: { brief: string; ratio?: string; durationSeconds?: number; videoModel?: string }): Job {
   const current: Job = { brief: input.brief, startedAt: new Date().toISOString(), status: 'running', log: [] }
   job = current
-  direct({
+  runHarness({
     brief: input.brief,
     ratio: input.ratio,
     durationSeconds: input.durationSeconds,
@@ -66,7 +66,7 @@ export async function startStudio(port: number, host: string): Promise<void> {
       }
       if (url.pathname === '/api/memory') return send(200, await memoryStatus())
       if (url.pathname === '/api/job' && request.method === 'GET') return send(200, job ?? null)
-      if (url.pathname === '/api/direct' && request.method === 'POST') {
+      if (url.pathname === '/api/harness' && request.method === 'POST') {
         // The studio binds to localhost; refuse cross-site form posts all the same.
         if (!(request.headers['content-type'] ?? '').includes('application/json')) return send(415, { error: 'send application/json' })
         if (job?.status === 'running') return send(409, { error: '已有一支片子在制作中，请等它完成。' })
