@@ -15,8 +15,7 @@
   <a href="#项目说明">项目说明</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#部署说明">部署说明</a> ·
-  <a href="#成片展示">成片展示</a> ·
-  <a href="#agent-skills">Agent Skills</a> ·
+    <a href="#agent-skills">Agent Skills</a> ·
   <a href="#技术栈说明">技术栈</a> ·
   <a href="#当前状态">当前状态</a>
 </p>
@@ -84,7 +83,7 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 ```bash
 git clone git@github.com:hojiahao/cineloom.git && cd cineloom
 npm install && npm run build
-npm test                      # 23 个测试，含一条从立项到成片的端到端流程
+npm test                      # 26 个测试：工具链端到端 + CineLoom Harness 端到端
 
 node dist/cli.js studio       # 打开 http://127.0.0.1:3090 ，输入创意，点“开拍”
 node dist/cli.js harness "给一款叫“冷”的无糖气泡水做一条 15 秒竖版广告，面向大学生"   # 或者用命令行
@@ -102,7 +101,7 @@ node dist/cli.js shots some-ad.mp4 --out breakdown                              
 ### 1. 本地算力如何部署智能体
 
 ```bash
-HF_ENDPOINT=https://hf-mirror.com scripts/download-models.sh   # 权重约 109 GB，可断点续传
+HF_ENDPOINT=https://hf-mirror.com scripts/download-models.sh   # 权重约 150 GB（含配音环境），可断点续传
 scripts/spark-up.sh                                            # 起 Nemotron、Step3-VL、ComfyUI 并自检
 ```
 
@@ -142,6 +141,10 @@ scripts/spark-up.sh                                            # 起 Nemotron、
 | Wan2.2 I2V A14B + 4 步 LoRA，5 秒 720p 竖版片段 | 353 s |
 | Harness 方案阶段（需求 → 脚本 → 合规 → 分镜） | 157 s（旧版，含一次失败的审稿）；关掉思考后脚本 5.5 s、分镜 4.3 s |
 | 第一支端到端成片（旧流水线，5B 视频模型，15 秒 3 镜头，质检重生成 4 次） | 1453 s |
+| 新流水线成片（定妆图 + 参考图首帧 + 14B 视频，15 秒 3 镜头，质检重生成 2 次） | 2044 s |
+| 带定妆图参考的首帧 1080×1920（Qwen-Image-Edit） | 约 77 s |
+| 成片阶段：3 句配音 + 音乐生成 + 混音 + 调色出片 | 45 s（其中音乐 9.1 s） |
+| 阶段切换时释放扩散模型 | 可用内存约 22 GB → 49 GB |
 
 Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太小时正文会为空。
 
@@ -215,7 +218,9 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | ComfyUI · Qwen-Image / Qwen-Image-Edit-2509（含 Lightning 8-step LoRA） | 首帧生成；带产品参考图的生成；能渲染中文字 |
 | ComfyUI · Wan2.2 I2V A14B（FP8）+ lightx2v 4-step LoRA | 默认视频模型：首帧驱动的 5 秒片段 |
 | ComfyUI · Wan2.2 TI2V-5B | 备选视频模型，支持无首帧的文生视频 |
-| ffmpeg · libass | 参考片切镜、尾帧续接；成片的转场、调色、颗粒、暗角和真字体标题字幕 |
+| ffmpeg · libass | 参考片切镜、尾帧续接；成片的转场、调色、颗粒、暗角、真字体标题字幕与混音 |
+| Kokoro-82M-v1.1-zh | 离线中文配音 |
+| ComfyUI · ACE-Step v1 3.5B | 本地生成器乐背景音乐 |
 | TypeScript · Node.js 22 · Vitest | CineLoom Harness、CLI、Studio 与测试（零运行时依赖） |
 | [archify](https://github.com/tt-a1i/archify) | 架构图 |
 
@@ -224,14 +229,16 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 如实记录，随开发更新。
 
 - [x] 自研智能体框架 CineLoom Harness（`cineloom harness`）：一句创意到成片，八个阶段、多个子智能体，全部在本机
-- [x] Nemotron、Step3-VL、ComfyUI 三个服务在同一台 DGX Spark 上常驻运行；全部权重（约 140 GB）已下载
+- [x] Nemotron、Step3-VL、ComfyUI 三个服务在同一台 DGX Spark 上常驻运行；全部权重（约 150 GB）已下载
 - [x] 第一支端到端成片（旧流水线）：1453 秒；质检闭环真实触发 4 次重生成
 - [x] 新流水线：产品定妆图锁定、画面无字、严格质检、14B 视频模型、电影化后期
 - [x] Studio 工作台：网页提交创意、实时进度
 - [x] “带 / 不带 Skill”对比评测与两份 `BENCHMARK.md`
-- [x] 23 个测试通过，端到端测试走真实 ffmpeg
-- [ ] 配音、音乐与音效（目前成片无声）
-- [ ] 每镜头多候选选优
+- [x] 成片有声：本地中文配音（Kokoro）+ 本地生成的器乐（ACE-Step，实测 9 秒）+ 口播时自动压低音乐
+- [x] 结尾定版、每镜头 2 个候选由质检选优、字幕字符校验与字体缺字检查
+- [x] 26 个测试通过：Harness 全流程用脚本化的模型服务和假 ComfyUI 验证，ffmpeg 为真
+- [ ] 多行业案例片（饮料、咖啡、护肤、数码；竖版与横版）生成中，完成后放入“成片展示”
+- [ ] 音效；配音音色与情绪的选择
 - [ ] 演示视频（B 站）与“十日谈”发布
 
 本仓库不会出现未经实测的性能数字。
