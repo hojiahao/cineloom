@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "CineLoom 影织 · 系统架构",
+    "locale": "zh-CN",
+    "output": "cineloom-architecture.html",
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "external": {
+          "label": "用户"
+        },
+        "backend": {
+          "label": "运行时"
+        },
+        "frontend": {
+          "label": "技能与界面"
+        },
+        "cloud": {
+          "label": "本地大模型"
+        },
+        "messagebus": {
+          "label": "扩散生成"
+        },
+        "database": {
+          "label": "项目记录"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "creator",
+      "type": "external",
+      "label": "创作者",
+      "sublabel": "创意 / 参考片",
+      "pos": [
+        330,
+        50
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "harness",
+      "type": "backend",
+      "label": "DeepSeek Harness",
+      "sublabel": "导演智能体 · AGENTS.md",
+      "pos": [
+        330,
+        230
+      ],
+      "size": [
+        180,
+        68
+      ],
+      "brand": "deepseek"
+    },
+    {
+      "id": "nemotron",
+      "type": "cloud",
+      "label": "Nemotron 3.5",
+      "sublabel": "vLLM · NVFP4 · DSpark",
+      "pos": [
+        620,
+        230
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "skills",
+      "type": "frontend",
+      "label": "Agent Skills ×9",
+      "sublabel": ".agents/skills",
+      "pos": [
+        330,
+        400
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "stepvl",
+      "type": "cloud",
+      "label": "Step3-VL-10B",
+      "sublabel": "StepFun · vLLM · FP8",
+      "pos": [
+        40,
+        570
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "cli",
+      "type": "backend",
+      "label": "cineloom CLI",
+      "sublabel": "TypeScript · ffmpeg",
+      "pos": [
+        330,
+        570
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "comfyui",
+      "type": "messagebus",
+      "label": "ComfyUI",
+      "sublabel": "Qwen-Image · Wan2.2",
+      "pos": [
+        620,
+        570
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "projects",
+      "type": "database",
+      "label": "projects/",
+      "sublabel": "state.json · 素材",
+      "pos": [
+        330,
+        740
+      ],
+      "size": [
+        180,
+        68
+      ]
+    },
+    {
+      "id": "studio",
+      "type": "frontend",
+      "label": "Studio 看板",
+      "sublabel": "成片 · 交付报告",
+      "pos": [
+        620,
+        740
+      ],
+      "size": [
+        180,
+        68
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NVIDIA DGX Spark · GB10 · 121.7 GB 统一内存",
+      "wraps": [
+        "harness",
+        "nemotron",
+        "skills",
+        "stepvl",
+        "cli",
+        "comfyui",
+        "projects",
+        "studio"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "brief",
+      "from": "creator",
+      "to": "harness",
+      "label": "需求",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 51
+    },
+    {
+      "id": "reasoning",
+      "from": "harness",
+      "to": "nemotron",
+      "label": "规划"
+    },
+    {
+      "id": "load-skill",
+      "from": "harness",
+      "to": "skills",
+      "label": "按需加载",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 51
+    },
+    {
+      "id": "run-command",
+      "from": "skills",
+      "to": "cli",
+      "label": "调用命令",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 51
+    },
+    {
+      "id": "vision",
+      "from": "cli",
+      "to": "stepvl",
+      "label": "质检"
+    },
+    {
+      "id": "generate",
+      "from": "cli",
+      "to": "comfyui",
+      "label": "生成"
+    },
+    {
+      "id": "record",
+      "from": "cli",
+      "to": "projects",
+      "label": "写入记录",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 51
+    },
+    {
+      "id": "board",
+      "from": "projects",
+      "to": "studio",
+      "label": "只读",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "智能体",
+      "items": [
+        "一个导演按八个阶段推进",
+        "九个 Skill 封装各环节的专业判断",
+        "审查方不能是产出方"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "本地模型",
+      "items": [
+        "Nemotron：规划与英文提示词",
+        "Step3-VL：中文文案与看图质检",
+        "扩散模型按阶段加载，用完释放"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "底线",
+      "items": [
+        "文案先过合规，再进生成",
+        "首帧过质检，才生成视频",
+        "素材全程不出本机"
+      ]
+    }
+  ]
+}

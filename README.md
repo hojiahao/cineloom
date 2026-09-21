@@ -63,28 +63,11 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 
 ### 架构
 
-```mermaid
-flowchart LR
-  U([创意需求 / 参考片]) --> H
-  subgraph Spark["NVIDIA DGX Spark · GB10 · 121 GB 统一内存"]
-    H["DeepSeek Harness<br/>导演智能体 · AGENTS.md"]
-    S[["Agent Skills ×9<br/>.agents/skills/"]]
-    C["cineloom CLI<br/>TypeScript"]
-    N["Nemotron 3.5 Lightning<br/>vLLM · NVFP4 · DSpark"]
-    V["Step3-VL-10B<br/>vLLM · FP8"]
-    F["ComfyUI<br/>Qwen-Image · Wan2.2"]
-    P[("projects/&lt;id&gt;/<br/>state.json · 素材")]
-    B["Studio 看板"]
-    H <--> N
-    H -- 按需加载 --> S
-    S -- 调用 --> C
-    C -- 生图 / 生视频 --> F
-    C -- 质检 / 拉片 --> V
-    C -- ffmpeg 切镜 / 合成 --> P
-    P --> B
-  end
-  B --> O([成片 + 交付报告])
-```
+<p align="center">
+  <img src="docs/assets/architecture.png" alt="CineLoom 系统架构：创作者 → DeepSeek Harness 导演智能体 → Agent Skills → cineloom CLI → projects 记录 → Studio 看板；Nemotron、Step3-VL、ComfyUI 均在 DGX Spark 本地" width="820">
+</p>
+
+<p align="center"><sub>用 <a href="https://github.com/tt-a1i/archify">archify</a> 生成，showcase 档校验 9/9 通过。规格与可交互版本（缩放、搜索、关系追踪、明暗主题）：<a href="docs/architecture/cineloom.architecture.json">cineloom.architecture.json</a> · <a href="docs/architecture/cineloom-architecture.html">cineloom-architecture.html</a></sub></p>
 
 设计取舍：
 
