@@ -11,6 +11,7 @@ import { addAsset, createProject, loadProject, projectDir, setStage, STAGES, typ
 import { buildShots } from '../lib/shots.js'
 import { askVision, extractJson } from '../lib/vision.js'
 import { direct } from '../agent/director.js'
+import { runAblation } from '../agent/evals.js'
 import { startStudio } from '../studio/server.js'
 
 export type Command = (args: ParsedArgs) => Promise<number>
@@ -243,4 +244,10 @@ async function directCommand(args: ParsedArgs): Promise<number> {
   return 0
 }
 
-export const COMMANDS: Record<string, Command> = { direct: directCommand, project, image, video, 'copy-check': copyCheck, shots, mem, qa, cut, doctor, studio }
+/** Same model, same briefs, with and without the skills; scored by the director's validators. */
+async function evalCommand(args: ParsedArgs): Promise<number> {
+  print(await runAblation(flag(args, 'briefs', 'eval/briefs.json')!, flag(args, 'out', 'eval/results/ablation.json')!, numberFlag(args, 'repeats', 2), (line) => console.error(line)))
+  return 0
+}
+
+export const COMMANDS: Record<string, Command> = { direct: directCommand, eval: evalCommand, project, image, video, 'copy-check': copyCheck, shots, mem, qa, cut, doctor, studio }

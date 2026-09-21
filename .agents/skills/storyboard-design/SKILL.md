@@ -19,32 +19,35 @@ that belongs to the same film.
 
 ## Workflow
 
-1. Read `script/script.md` and `brief.md`. One script beat becomes one shot of 5 s (or 10 s for a slow hero shot; longer is two chained segments and drifts more).
-2. Write a style line once - palette, light, lens, texture - and repeat it verbatim in every image prompt. Consistency comes from repetition, not from hoping the model remembers.
-3. For each shot decide framing (extreme close-up, close-up, medium, wide), one camera move (static, push-in, pull-out, pan, orbit, tilt), subject and action, and which references apply.
-4. Write the image prompt in English: subject first, then action, setting, light, framing, the style line. Put on-screen text in double quotes with its position ("top centre, bold white sans-serif"). Chinese text inside the quotes is fine - the image model renders it.
-5. Write the video prompt separately: what moves, how the camera moves, and what stays still. Do not restate the look; the first frame carries it.
-6. Assign references. Product photos go to every shot that shows the product, product first in the list. At most three references per shot.
-7. If a reference breakdown exists, keep its shot count, durations, framing and camera moves; replace subject, product and scene.
-8. Save `projects/<id>/storyboard/storyboard.json`.
+1. Read the brief and the approved script. One script beat becomes one shot of 5 seconds.
+2. Describe the product once, in `product`: container type, material, colours, and the label text in quotes. Every shot shows that same product. In `image_prompt` call it "the product" and do not describe it again - the pipeline generates one approved hero still from `product` and anchors every frame to it, because a product described per shot drifts (a can in shot 1 became a bottle in shot 2).
+3. Write one `style` line - palette, light, texture, mood - and nothing else. No numbers, no lens specs, no resolution tags: the image model paints short tokens like "50mm" into the picture as text. Style and the no-text rule are appended to every shot automatically.
+4. Never ask for captions, slogans or subtitles in `image_prompt`. On-screen text is typeset in post-production in a real font; text drawn by the model warps, duplicates and turns rare characters into common ones. Put the beat's text in `on_screen_text` only.
+5. Design around what the models do badly. Prefer product, liquid, ice, glass, steam, light and macro compositions. Use at most one shot with a person, framed so that hands and face are not the subject. Never two subjects or two actions in one shot: the video model picks one.
+6. Vary the shots like a cinematographer: change framing between neighbours (macro -> medium -> wide), give each shot a motivated light source, and build to the product reveal.
+7. `image_prompt` in English: subject first, then action, setting, light, framing.
+8. `video_prompt` in English, separate from the look: what moves, exactly one camera move described the way a cinematographer would ("slow push-in with a subtle, breath-like handheld float"), and what stays still. For product-only shots end with "No people and no hands enter the frame" - otherwise the video model tends to add a hand.
+9. `must_show` is what the quality gate checks, so write something visible and specific.
+10. If a reference breakdown exists, keep its shot count, durations, framing and camera moves; replace subject, product and scene.
 
 ## Output format
 
 ```json
 {
-  "style": "soft morning light, pastel teal and coral, 50mm, shallow depth of field, clean commercial look",
+  "style": "cool backlit morning light, pastel teal and coral, shallow depth of field, fine film grain, clean commercial look",
+  "product": "a slim matte-silver aluminium can with a teal band whose label reads \"冷\" in bold white brush calligraphy",
   "shots": [
-    {"shot": 1, "seconds": 5, "beat": "hook", "framing": "extreme close-up", "camera": "slow push-in",
-     "image_prompt": "...", "video_prompt": "...", "on_screen_text": "冰爽一夏",
-     "refs": ["refs/can_front.png"], "must_show": "the can with its label readable"}
+    {"shot": 1, "seconds": 5, "framing": "macro", "camera": "slow push-in",
+     "image_prompt": "Macro of the product half buried in crushed ice, condensation beading on the metal, backlit mist",
+     "video_prompt": "Slow push-in with a subtle, breath-like handheld float. Droplets slide down the metal, mist drifts. The product stays still. No people and no hands enter the frame.",
+     "on_screen_text": "冰爽一夏", "must_show": "the can upright in ice with its label readable"}
   ]
 }
 ```
 
-`must_show` is what the quality gate checks, so write it as something visible.
-
 ## Common failures
 
 - Two subjects or two actions in one shot: the video model picks one. Split the shot.
-- Text longer than about 8 characters, or text in the video prompt: it warps. Keep text on the frame, short.
-- A different adjective set per shot: the film stops looking like one film.
+- Text requested inside the image, or a style line with numbers in it: it shows up as stray lettering and the gate rejects the frame.
+- Re-describing the product in a shot: the description competes with the hero still and the product drifts.
+- The same framing three times in a row: the film reads as one long shot.

@@ -49,7 +49,7 @@
       "id": "agents",
       "type": "backend",
       "label": "子智能体",
-      "sublabel": "文案 · 审查 · 质检",
+      "sublabel": "文案 · 审稿 · 质检",
       "pos": [
         40,
         170
@@ -210,13 +210,13 @@
       "id": "reasoning",
       "from": "director",
       "to": "nemotron",
-      "label": "规划"
+      "label": "推理"
     },
     {
-      "id": "copywriting",
+      "id": "vision-gate",
       "from": "agents",
       "to": "stepvl",
-      "label": "中文",
+      "label": "看图",
       "fromSide": "bottom",
       "toSide": "top",
       "labelDy": 94
@@ -285,8 +285,8 @@
       "dot": "emerald",
       "title": "本地模型",
       "items": [
-        "Nemotron：规划与英文提示词",
-        "Step3-VL：中文文案与看图质检",
+        "Nemotron：规划、文案、审稿、英文提示词",
+        "Step3-VL：看图质检与参考片理解",
         "扩散模型按阶段加载"
       ]
     },

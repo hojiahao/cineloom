@@ -9,6 +9,7 @@ import { memoryStatus } from '../lib/memory.js'
 import { addAsset, createProject, projectDir, setStage, type Stage } from '../lib/project.js'
 import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
 import { chatJson, endpoints, type ModelEndpoint } from './llm.js'
+import { agentSystem, scriptUser, storyboardUser } from './prompts.js'
 import { loadRules, loadSkill } from './skills.js'
 
 export interface DirectOptions {
@@ -59,9 +60,7 @@ export async function direct(options: DirectOptions): Promise<DirectResult> {
   const rejectedAttempts: Record<string, number> = {}
 
   const agentPrompt = async (role: string, skill: string) =>
-    [`You are the ${role} of CineLoom, an advertising studio running on one DGX Spark.`, rules, options.withoutSkills ? '' : `# Skill: ${skill}\n\n${await loadSkill(skill)}`]
-      .filter(Boolean)
-      .join('\n\n')
+    agentSystem(role, rules, options.withoutSkills ? undefined : { name: skill, body: await loadSkill(skill) })
 
   // ---- brief -----------------------------------------------------------------------------
   log('▸ brief        intake agent · nemotron')
@@ -105,8 +104,7 @@ Return JSON only:
       thinking: false,
       maxTokens: 3000,
       temperature: 0.8,
-      user: `Brief:\n${JSON.stringify(brief, null, 2)}\n\nWrite the script. Voiceover ("vo") and on-screen text ("text") are in Chinese; "see" is in English.
-Return JSON only: {"structure": "...", "beats": [{"beat": 1, "job": "hook|proof|payoff|cta", "see": "...", "vo": "...", "text": "..."}]}`,
+      user: scriptUser(brief),
     },
     (script) => checkScript(script, brief),
   )
@@ -161,17 +159,10 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   // ---- storyboard ------------------------------------------------------------------------
   await setStage(brief.id, 'storyboard', 'running')
   log('▸ storyboard   storyboard agent · nemotron')
-  const storyboardUser = `Brief:\n${JSON.stringify(brief, null, 2)}\n\nApproved script:\n${JSON.stringify(script, null, 2)}
-
-No reference photos exist. Describe the product ONCE in "product": container type, material, colours, and a label that reads "${brief.brandText}" in quotes.
-On-screen text is typeset in post-production: never ask for captions or slogans in image_prompt, and put no numbers or lens specs in "style" (they get painted into the picture).
-Design around what image and video models do badly: prefer product, liquid, ice, light, macro and hands-free compositions; at most one shot with a person, framed so hands and face are not the subject.
-Every shot shows that same product; in image_prompt refer to it as "the product" and do not re-describe it or restate the style - both are appended to every shot automatically.
-Return JSON only: {"style": "one style line", "product": "one sentence", "shots": [{"shot": 1, "seconds": 5, "framing": "...", "camera": "one move", "image_prompt": "subject, action, setting, light, framing",
-"video_prompt": "what moves, one camera move described like a cinematographer (for example: slow push-in with a subtle breath-like handheld float), what stays still; for product-only shots end with: No people and no hands enter the frame", "on_screen_text": "", "must_show": "something visible"}]}`
+  const storyboardUserPrompt = storyboardUser(brief, script)
   const storyboardRun = await chatJson<Storyboard>(
     planner,
-    { system: await agentPrompt('storyboard artist', 'storyboard-design'), thinking: false, maxTokens: 5000, temperature: 0.6, user: storyboardUser },
+    { system: await agentPrompt('storyboard artist', 'storyboard-design'), thinking: false, maxTokens: 5000, temperature: 0.6, user: storyboardUserPrompt },
     (storyboard) => checkStoryboard(storyboard, script),
   )
   const storyboard = storyboardRun.value

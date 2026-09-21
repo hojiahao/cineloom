@@ -1,0 +1,578 @@
+{
+  "date": "2026-09-21T09:11:49.604Z",
+  "model": "nemotron-3.5-lightning",
+  "briefs": 8,
+  "repeats": 2,
+  "method": "one attempt per stage, thinking off, scored by src/agent/checks.ts plus two frame-level failure modes",
+  "withSkills": {
+    "runs": 16,
+    "scriptCleanFirstTry": "6/16",
+    "storyboardCleanFirstTry": "8/16",
+    "meanScriptViolations": 1.06,
+    "meanStoryboardViolations": 0.75,
+    "meanSeconds": 15.51
+  },
+  "withoutSkills": {
+    "runs": 16,
+    "scriptCleanFirstTry": "0/16",
+    "storyboardCleanFirstTry": "0/16",
+    "meanScriptViolations": 3.63,
+    "meanStoryboardViolations": 8,
+    "meanSeconds": 28.66
+  },
+  "rows": [
+    {
+      "brief": "给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天，清爽",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 16.326
+      },
+      "withoutSkills": {
+        "scriptViolations": 5,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 1: voiceover has only 6 characters; write 8-18 so the beat is not mostly silence",
+          "beat 2: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence",
+          "beat 3: voiceover has only 4 characters; write 8-18 so the beat is not mostly silence",
+          "beat 4: voiceover has only 4 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 6,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 1: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 1: image_prompt asks the model to draw text"
+        ],
+        "seconds": 23.312
+      }
+    },
+    {
+      "brief": "给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天，清爽",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "beat 2: voiceover has only 6 characters; write 8-18 so the beat is not mostly silence",
+          "beat 3: voiceover has only 4 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "shot 2: image_prompt asks the model to draw text"
+        ],
+        "seconds": 14.977
+      },
+      "withoutSkills": {
+        "scriptViolations": 4,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 1: on-screen text has 9 characters; at most 8",
+          "beat 3: on-screen text has 11 characters; at most 8",
+          "beat 4: on-screen text has 10 characters; at most 8"
+        ],
+        "storyboardViolations": 4,
+        "storyboardProblems": [
+          "one shot per beat: expected 4 shots, got 1",
+          "shot 1: camera must be exactly one move",
+          "shot 1: on_screen_text is longer than 8 characters and will warp",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 15.232
+      }
+    },
+    {
+      "brief": "一款叫“砾”的挂耳咖啡，10 秒横版广告，面向早起通勤的上班族，温暖克制",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 3,
+        "scriptProblems": [
+          "the script must have exactly 2 beats of 5 seconds (one beat becomes one generated clip); it has 3",
+          "beat 1: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence",
+          "beat 2: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 3,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text"
+        ],
+        "seconds": 16.584
+      },
+      "withoutSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "the script must have exactly 2 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 1: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 6,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move",
+          "shot 3: camera must be exactly one move",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: camera must be exactly one move",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 24.352
+      }
+    },
+    {
+      "brief": "一款叫“砾”的挂耳咖啡，10 秒横版广告，面向早起通勤的上班族，温暖克制",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "the script must have exactly 2 beats of 5 seconds (one beat becomes one generated clip); it has 3",
+          "beat 1: voiceover has only 6 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 3,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text"
+        ],
+        "seconds": 17.034
+      },
+      "withoutSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "the script must have exactly 2 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 4: \"vo\" is empty"
+        ],
+        "storyboardViolations": 6,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move",
+          "shot 2: camera must be exactly one move",
+          "shot 3: camera must be exactly one move",
+          "shot 4: camera must be exactly one move",
+          "style line contains numbers, which the image model paints into the frame",
+          "shot 4: image_prompt asks the model to draw text"
+        ],
+        "seconds": 24.094
+      }
+    },
+    {
+      "brief": "国货面霜“雾屿”的 15 秒竖版广告，面向 25-35 岁女性，强调保湿，质感高级",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "beat 1: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: Expected ',' or ']' "
+        ],
+        "seconds": 18.368
+      },
+      "withoutSkills": {
+        "scriptViolations": 3,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 2: voiceover has 19 characters; at most 18 fit in 5 seconds",
+          "beat 2: on-screen text has 9 characters; at most 8"
+        ],
+        "storyboardViolations": 6,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move",
+          "shot 2: on_screen_text is longer than 8 characters and will warp",
+          "shot 3: camera must be exactly one move",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 30.96
+      }
+    },
+    {
+      "brief": "国货面霜“雾屿”的 15 秒竖版广告，面向 25-35 岁女性，强调保湿，质感高级",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "beat 1: voiceover has only 5 characters; write 8-18 so the beat is not mostly silence",
+          "beat 3: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: Expected ',' or '}' "
+        ],
+        "seconds": 11.153
+      },
+      "withoutSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4"
+        ],
+        "storyboardViolations": 6,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move",
+          "shot 2: camera must be exactly one move",
+          "shot 3: camera must be exactly one move",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: camera must be exactly one move",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 27.616
+      }
+    },
+    {
+      "brief": "手工香薰蜡烛品牌“栖”，15 秒竖版，送礼场景，安静治愈",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: Unexpected non-white"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "skipped: no script to storyboard"
+        ],
+        "seconds": 8.986
+      },
+      "withoutSkills": {
+        "scriptViolations": 4,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 2: on-screen text has 10 characters; at most 8",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。"
+        ],
+        "storyboardViolations": 9,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: camera must be exactly one move",
+          "shot 2: on_screen_text is longer than 8 characters and will warp",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: camera must be exactly one move",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: camera must be exactly one move",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 24.147
+      }
+    },
+    {
+      "brief": "手工香薰蜡烛品牌“栖”，15 秒竖版，送礼场景，安静治愈",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "beat 1: voiceover has only 6 characters; write 8-18 so the beat is not mostly silence",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "one shot per beat: expected 3 shots, got 1"
+        ],
+        "seconds": 12.332
+      },
+      "withoutSkills": {
+        "scriptViolations": 4,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 4: on-screen text has 12 characters; at most 8",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。"
+        ],
+        "storyboardViolations": 5,
+        "storyboardProblems": [
+          "one shot per beat: expected 4 shots, got 5",
+          "shot 1: camera must be exactly one move",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: on_screen_text is longer than 8 characters and will warp",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 30.377
+      }
+    },
+    {
+      "brief": "一款便携榨汁杯“果动”，20 秒竖版种草视频，面向健身人群，活力",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: Unexpected non-white"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "skipped: no script to storyboard"
+        ],
+        "seconds": 10.992
+      },
+      "withoutSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "beat 4: on-screen text has 15 characters; at most 8"
+        ],
+        "storyboardViolations": 9,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 1: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: video_prompt must be in English and must not contain on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: on_screen_text is longer than 8 characters and will warp"
+        ],
+        "seconds": 27.515
+      }
+    },
+    {
+      "brief": "一款便携榨汁杯“果动”，20 秒竖版种草视频，面向健身人群，活力",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "the script must have exactly 4 beats of 5 seconds (one beat becomes one generated clip); it has 3"
+        ],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 16.407
+      },
+      "withoutSkills": {
+        "scriptViolations": 3,
+        "scriptProblems": [
+          "beat 2: on-screen text has 11 characters; at most 8",
+          "beat 3: on-screen text has 9 characters; at most 8",
+          "beat 4: on-screen text has 14 characters; at most 8"
+        ],
+        "storyboardViolations": 12,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: on_screen_text is longer than 8 characters and will warp",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: camera must be exactly one move",
+          "shot 3: on_screen_text is longer than 8 characters and will warp",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: camera must be exactly one move",
+          "shot 4: on_screen_text is longer than 8 characters and will warp",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 32.745
+      }
+    },
+    {
+      "brief": "新茶饮品牌“山雾”推出冷泡茶，15 秒竖版，年轻白领，清雅东方",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 17.935
+      },
+      "withoutSkills": {
+        "scriptViolations": 4,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 1: on-screen text has 16 characters; at most 8",
+          "beat 2: on-screen text has 9 characters; at most 8",
+          "beat 4: on-screen text has 10 characters; at most 8"
+        ],
+        "storyboardViolations": 12,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 1: video_prompt must be in English and must not contain on-screen text",
+          "shot 1: on_screen_text is longer than 8 characters and will warp",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: on_screen_text is longer than 8 characters and will warp",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: on_screen_text is longer than 8 characters and will warp",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 24.173
+      }
+    },
+    {
+      "brief": "新茶饮品牌“山雾”推出冷泡茶，15 秒竖版，年轻白领，清雅东方",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "beat 2: voiceover has only 5 characters; write 8-18 so the beat is not mostly silence",
+          "beat 3: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 16.446
+      },
+      "withoutSkills": {
+        "scriptViolations": 6,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 1: on-screen text has 9 characters; at most 8",
+          "beat 2: on-screen text has 10 characters; at most 8",
+          "beat 3: on-screen text has 9 characters; at most 8",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。"
+        ],
+        "storyboardViolations": 13,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move",
+          "shot 1: on_screen_text is longer than 8 characters and will warp",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: camera must be exactly one move",
+          "shot 2: on_screen_text is longer than 8 characters and will warp",
+          "shot 3: camera must be exactly one move",
+          "shot 3: on_screen_text is longer than 8 characters and will warp",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: camera must be exactly one move",
+          "shot 2: image_prompt re-describes the product instead of referring to \"the product\"",
+          "shot 4: image_prompt re-describes the product instead of referring to \"the product\""
+        ],
+        "seconds": 28.147
+      }
+    },
+    {
+      "brief": "国产机械键盘“青轴社”，15 秒横版，面向程序员，利落有科技感",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 17.623
+      },
+      "withoutSkills": {
+        "scriptViolations": 6,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 2: voiceover has 20 characters; at most 18 fit in 5 seconds",
+          "beat 2: on-screen text has 9 characters; at most 8",
+          "beat 3: voiceover has 19 characters; at most 18 fit in 5 seconds",
+          "beat 3: on-screen text has 9 characters; at most 8",
+          "beat 4: on-screen text has 16 characters; at most 8"
+        ],
+        "storyboardViolations": 5,
+        "storyboardProblems": [
+          "shot 2: on_screen_text is longer than 8 characters and will warp",
+          "shot 3: on_screen_text is longer than 8 characters and will warp",
+          "shot 4: on_screen_text is longer than 8 characters and will warp",
+          "style line contains numbers, which the image model paints into the frame",
+          "shot 4: image_prompt asks the model to draw text"
+        ],
+        "seconds": 35.504
+      }
+    },
+    {
+      "brief": "国产机械键盘“青轴社”，15 秒横版，面向程序员，利落有科技感",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 17.338
+      },
+      "withoutSkills": {
+        "scriptViolations": 6,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 1: on-screen text has 9 characters; at most 8",
+          "beat 2: voiceover has 19 characters; at most 18 fit in 5 seconds",
+          "beat 4: on-screen text has 9 characters; at most 8",
+          "restricted wording \"极致\" (absolute_terms): 《广告法》第九条第（三）项禁止使用“国家级”“最高级”“最佳”等绝对化用语。",
+          "restricted wording \"极致\" (absolute_terms): 《广告法》第九条第（三）项禁止使用“国家级”“最高级”“最佳”等绝对化用语。"
+        ],
+        "storyboardViolations": 9,
+        "storyboardProblems": [
+          "one shot per beat: expected 4 shots, got 5",
+          "shot 1: camera must be exactly one move",
+          "shot 1: on_screen_text is longer than 8 characters and will warp",
+          "shot 2: camera must be exactly one move",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: camera must be exactly one move",
+          "shot 4: on_screen_text is longer than 8 characters and will warp",
+          "shot 5: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text"
+        ],
+        "seconds": 37.868
+      }
+    },
+    {
+      "brief": "儿童保温杯“小鲸”，15 秒竖版，面向年轻父母，安心可爱",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 17.899
+      },
+      "withoutSkills": {
+        "scriptViolations": 3,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 2: voiceover has 19 characters; at most 18 fit in 5 seconds",
+          "beat 4: on-screen text has 11 characters; at most 8"
+        ],
+        "storyboardViolations": 9,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 1: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: video_prompt must be in English and must not contain on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: on_screen_text is longer than 8 characters and will warp"
+        ],
+        "seconds": 32.325
+      }
+    },
+    {
+      "brief": "儿童保温杯“小鲸”，15 秒竖版，面向年轻父母，安心可爱",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 17.684
+      },
+      "withoutSkills": {
+        "scriptViolations": 4,
+        "scriptProblems": [
+          "the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); it has 4",
+          "beat 1: on-screen text has 12 characters; at most 8",
+          "beat 2: voiceover has 22 characters; at most 18 fit in 5 seconds",
+          "beat 3: on-screen text has 9 characters; at most 8"
+        ],
+        "storyboardViolations": 11,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 1: video_prompt must be in English and must not contain on-screen text",
+          "shot 1: on_screen_text is longer than 8 characters and will warp",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: video_prompt must be in English and must not contain on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: video_prompt must be in English and must not contain on-screen text",
+          "shot 3: on_screen_text is longer than 8 characters and will warp",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: video_prompt must be in English and must not contain on-screen text",
+          "shot 4: image_prompt asks the model to draw text"
+        ],
+        "seconds": 40.269
+      }
+    }
+  ]
+}

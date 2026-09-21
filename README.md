@@ -64,10 +64,10 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 ### 架构
 
 <p align="center">
-  <img src="docs/assets/architecture.png" alt="CineLoom 系统架构：创作者 → DeepSeek Harness 导演智能体 → Agent Skills → cineloom CLI → projects 记录 → Studio 看板；Nemotron、Step3-VL、ComfyUI 均在 DGX Spark 本地" width="820">
+  <img src="docs/assets/architecture.png" alt="CineLoom 系统架构：创作者 → DeepSeek Harness 导演智能体 → Agent Skills → cineloom CLI → projects 记录 → Studio 看板；Nemotron、Step3-VL、ComfyUI 均在 DGX Spark 本地" width="760">
 </p>
 
-<p align="center"><sub>用 <a href="https://github.com/tt-a1i/archify">archify</a> 生成，showcase 档校验 9/9 通过。规格与可交互版本（缩放、搜索、关系追踪、明暗主题）：<a href="docs/architecture/cineloom.architecture.json">cineloom.architecture.json</a> · <a href="docs/architecture/cineloom-architecture.html">cineloom-architecture.html</a></sub></p>
+<p align="center"><sub><a href="docs/architecture/cineloom-architecture.html">可交互版本</a>（缩放、搜索、关系追踪）· 用 <a href="https://github.com/tt-a1i/archify">archify</a> 绘制</sub></p>
 
 设计取舍：
 

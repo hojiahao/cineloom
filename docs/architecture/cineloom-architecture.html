@@ -5161,8 +5161,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <!-- Connection paths (before components for correct z-order) -->
         <path data-edge-from="creator" data-edge-to="director" data-edge-label="需求" data-edge-key="0" data-edge-id="brief" data-composition-points="308,92;308,170" d="M 308 92 L 308 170" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="director" data-edge-to="agents" data-edge-label="委派" data-edge-key="1" data-edge-id="delegate" data-composition-points="240,196;176,196" d="M 240 196 L 176 196" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="director" data-edge-to="nemotron" data-edge-label="规划" data-edge-key="2" data-edge-id="reasoning" data-composition-points="376,196;440,196" d="M 376 196 L 440 196" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="agents" data-edge-to="stepvl" data-edge-label="中文" data-edge-key="3" data-edge-id="copywriting" data-composition-points="108,222;108,410" d="M 108 222 L 108 410" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="director" data-edge-to="nemotron" data-edge-label="推理" data-edge-key="2" data-edge-id="reasoning" data-composition-points="376,196;440,196" d="M 376 196 L 440 196" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="agents" data-edge-to="stepvl" data-edge-label="看图" data-edge-key="3" data-edge-id="vision-gate" data-composition-points="108,222;108,410" d="M 108 222 L 108 410" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="director" data-edge-to="skills" data-edge-label="加载" data-edge-key="4" data-edge-id="load-skill" data-composition-points="308,222;308,290" d="M 308 222 L 308 290" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="skills" data-edge-to="cli" data-edge-label="调用" data-edge-key="5" data-edge-id="run-command" data-composition-points="308,342;308,410" d="M 308 342 L 308 410" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="cli" data-edge-to="stepvl" data-edge-label="质检" data-edge-key="6" data-edge-id="vision" data-composition-points="240,436;176,436" d="M 240 436 L 176 436" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
@@ -5183,15 +5183,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="context" x="308" y="80" class="t-muted" font-size="9" text-anchor="middle">一句创意</text>
         </g>
 
-        <g id="node-agents" data-node-id="agents" data-node-label="子智能体" tabindex="0" role="button" aria-label="聚焦子智能体，文案 · 审查 · 质检, NVIDIA DGX Spark · 121.7 GB 统一内存" aria-pressed="false" data-node-kind="backend" data-node-sublabel="文案 · 审查 · 质检" data-node-context="NVIDIA DGX Spark · 121.7 GB 统一内存">
-          <title>子智能体 · 文案 · 审查 · 质检 · NVIDIA DGX Spark · 121.7 GB 统一内存</title>
+        <g id="node-agents" data-node-id="agents" data-node-label="子智能体" tabindex="0" role="button" aria-label="聚焦子智能体，文案 · 审稿 · 质检, NVIDIA DGX Spark · 121.7 GB 统一内存" aria-pressed="false" data-node-kind="backend" data-node-sublabel="文案 · 审稿 · 质检" data-node-context="NVIDIA DGX Spark · 121.7 GB 统一内存">
+          <title>子智能体 · 文案 · 审稿 · 质检 · NVIDIA DGX Spark · 121.7 GB 统一内存</title>
           <rect x="40" y="170" width="136" height="52" rx="6" class="c-mask"/>
           <rect x="40" y="170" width="136" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(46 176) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="108" y="194" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">子智能体</text>
-        <text data-detail="context" x="108" y="210" class="t-muted" font-size="9" text-anchor="middle">文案 · 审查 · 质检</text>
+        <text data-detail="context" x="108" y="210" class="t-muted" font-size="9" text-anchor="middle">文案 · 审稿 · 质检</text>
         </g>
 
         <g id="node-director" data-node-id="director" data-node-label="导演智能体" tabindex="0" role="button" aria-label="聚焦导演智能体，cineloom direct, NVIDIA DGX Spark · 121.7 GB 统一内存" aria-pressed="false" data-node-kind="backend" data-node-sublabel="cineloom direct" data-node-context="NVIDIA DGX Spark · 121.7 GB 统一内存">
@@ -5301,13 +5301,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="193" y="176" width="30" height="14" rx="3" class="c-mask"/>
           <text x="208" y="186" class="t-muted" font-size="8" text-anchor="middle">委派</text>
         </g>
-        <g data-detail="context" data-edge-from="director" data-edge-to="nemotron" data-edge-label="规划" data-edge-key="2" data-edge-id="reasoning">
+        <g data-detail="context" data-edge-from="director" data-edge-to="nemotron" data-edge-label="推理" data-edge-key="2" data-edge-id="reasoning">
           <rect x="393" y="176" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="408" y="186" class="t-muted" font-size="8" text-anchor="middle">规划</text>
+          <text x="408" y="186" class="t-muted" font-size="8" text-anchor="middle">推理</text>
         </g>
-        <g data-detail="context" data-edge-from="agents" data-edge-to="stepvl" data-edge-label="中文" data-edge-key="3" data-edge-id="copywriting">
+        <g data-detail="context" data-edge-from="agents" data-edge-to="stepvl" data-edge-label="看图" data-edge-key="3" data-edge-id="vision-gate">
           <rect x="93" y="296" width="30" height="14" rx="3" class="c-mask"/>
-          <text x="108" y="306" class="t-muted" font-size="8" text-anchor="middle">中文</text>
+          <text x="108" y="306" class="t-muted" font-size="8" text-anchor="middle">看图</text>
         </g>
         <g data-detail="context" data-edge-from="director" data-edge-to="skills" data-edge-label="加载" data-edge-key="4" data-edge-id="load-skill">
           <rect x="293" y="236" width="30" height="14" rx="3" class="c-mask"/>
@@ -5572,8 +5572,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <h3>本地模型</h3>
         </div>
         <ul>
-          <li>&bull; Nemotron：规划与英文提示词</li>
-          <li>&bull; Step3-VL：中文文案与看图质检</li>
+          <li>&bull; Nemotron：规划、文案、审稿、英文提示词</li>
+          <li>&bull; Step3-VL：看图质检与参考片理解</li>
           <li>&bull; 扩散模型按阶段加载</li>
         </ul>
       </div>
