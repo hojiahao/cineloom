@@ -91,13 +91,17 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 
 ## 成片展示
 
-每支案例都由 `cineloom harness` 从一句创意在本机一次跑完，下面的画面直接取自成片，不做任何手工修饰；括号内是这次运行的真实记录。完整视频在 `docs/showcase/`，点击即可在 GitHub 播放（已压缩到 960p 以便仓库存放，原片 1080p 在本机）。
+每支案例都由 `cineloom harness` 从一句创意在本机一次跑完，下面的画面直接取自成片，不做任何手工修饰；括号内是这次运行的真实记录。动图是无声预览；有声成片以内嵌播放器形式放在各案例下方（GitHub 只渲染经其编辑器上传的视频），另附下载链接。原片 1080p 在本机，仓库内为压缩版。
 
 ### 饮料 · 无糖气泡水“冷” · 9:16 · 16.8 s · 有声
 
 <p align="center"><img src="docs/showcase/soda-frames.jpg" alt="气泡水案例：四个画面，罐身“冷”字在三个镜头和定版中保持一致" width="900"></p>
 
-<p align="center"><a href="docs/showcase/soda-9x16.mp4">▶ 观看成片</a> · <a href="docs/showcase/soda-hero.jpg">产品定妆图</a></p>
+<p align="center"><img src="docs/showcase/soda-9x16.gif" alt="气泡水成片动图预览（无声）" width="300"></p>
+
+<!-- 有声成片：把 docs/showcase/soda-9x16.mp4 拖进 GitHub 编辑器后得到的 user-attachments 链接单独放在下一行，GitHub 会渲染为播放器 -->
+
+<p align="center"><a href="docs/showcase/soda-9x16.mp4">⬇ 下载有声成片（1.1 MB）</a> · <a href="docs/showcase/soda-hero.jpg">产品定妆图</a></p>
 
 > 创意原话：给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天。电影质感：微距、冰、气泡、逆光，节奏克制。
 
@@ -114,7 +118,11 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 
 <p align="center"><img src="docs/showcase/keyboard-frames.jpg" alt="机械键盘案例：四个画面，同一把深灰键盘，空格键上方“青”字铭牌与底部灯效在三个镜头和定版中保持一致" width="900"></p>
 
-<p align="center"><a href="docs/showcase/keyboard-16x9.mp4">▶ 观看成片</a> · <a href="docs/showcase/keyboard-hero.jpg">产品定妆图</a></p>
+<p align="center"><img src="docs/showcase/keyboard-16x9.gif" alt="机械键盘成片动图预览（无声）" width="540"></p>
+
+<!-- 有声成片：把 docs/showcase/keyboard-16x9.mp4 拖进 GitHub 编辑器后得到的 user-attachments 链接单独放在下一行，GitHub 会渲染为播放器 -->
+
+<p align="center"><a href="docs/showcase/keyboard-16x9.mp4">⬇ 下载有声成片（1.4 MB）</a> · <a href="docs/showcase/keyboard-hero.jpg">产品定妆图</a></p>
 
 > 创意原话：给机械键盘“青”做一条 15 秒横版广告，面向程序员，利落、有科技感。电影质感：暗调、冷色轮廓光、按键微距、键帽背光逐排亮起。产品是深灰色铝合金机械键盘，空格键上方有一枚小小的青色“青”字铭牌。
 
