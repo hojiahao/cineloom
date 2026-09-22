@@ -51,3 +51,5 @@ three seconds and spend the rest proving it.
 - Match the register to the category: a drink is tasted, a cream is felt, a device is used. Borrowing another category's vocabulary ("肌肤燥热" for a soda) reads as wrong even when every rule passes.
 - The film ends on an end card with the brand and the single message, so the last beat should hand over to it rather than repeat it.
 - Voiceover sounds like a person talking, not a slogan list. Read it aloud once.
+- Voiceover is Chinese only; a stray English word ("唤醒 mornings") is a defect and is rejected. Only the brand text may be non-Chinese.
+- The voiceover talks about the experience, never about the packaging: "黑色衬线，牛皮纸质感" describes the label's typography and was accepted once by every check - it reads as a product spec, not an ad. Leave the look of the product to the storyboard.

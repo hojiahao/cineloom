@@ -7,39 +7,31 @@ so a violation is a rule the retry loop would otherwise have to clean up.
 
 ## Evaluation metadata
 
-- Date: 2026-09-21
+- Date: 2026-09-22
 - Model: `nemotron-3.5-lightning` served locally by vLLM on one DGX Spark (GB10), thinking off
 - Briefs: 8 advertising requests in `eval/briefs.json`, 2 runs each
-- Raw data: `eval/results/ablation.json` · Reproduce: `cineloom eval --repeats 2 && cineloom eval --report-only`
+- Raw data: `eval/results/ablation-v2.json` · Reproduce: `cineloom eval --repeats 2 && cineloom eval --report-only`
 
 ## Results
 
 | Measure | Baseline (no skill) | With skill |
 |---|---:|---:|
 | Runs scored | 16 | 16 |
-| Clean on the first attempt | 0/16 (0%) | 6/16 (38%) |
-| Mean rule violations per run | 3.63 | 1.06 |
+| Clean on the first attempt | 13/16 (81%) | 15/16 (94%) |
+| Mean rule violations per run | 0.38 | 0.06 |
 
 ### Most frequent violations without the skill
 
 | Count | Violation |
 |---:|---|
-| 24 | on-screen text has N characters; at most 8 |
-| 12 | the script must have exactly 3 beats of 5 seconds (one beat becomes one generated clip); i |
-| 6 | voiceover has N characters; at most 18 fit in 5 seconds |
-| 6 | restricted wording "治愈" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。 |
-| 5 | voiceover has only N characters; write 8-18 so the beat is not mostly silence |
-| 2 | the script must have exactly 2 beats of 5 seconds (one beat becomes one generated clip); i |
+| 5 | restricted wording "治愈" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。 |
+| 1 | voiceover has only N characters; write 8-18 so the beat is not mostly silence |
 
 ### Violations that remain with the skill
 
 | Count | Violation |
 |---:|---|
-| 11 | voiceover has only N characters; write 8-18 so the beat is not mostly silence |
-| 2 | the script must have exactly 2 beats of 5 seconds (one beat becomes one generated clip); i |
-| 2 | no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid  |
-| 1 | restricted wording "治愈" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。 |
-| 1 | the script must have exactly 4 beats of 5 seconds (one beat becomes one generated clip); i |
+| 1 | no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid  |
 
 ## Reading these numbers
 

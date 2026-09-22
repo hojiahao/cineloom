@@ -275,16 +275,16 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 
 ### 带 Skill 和不带 Skill 的差别
 
-同一个 Nemotron、同一批 8 个创意各跑 2 轮，唯一变量是子智能体的系统提示里有没有对应的 Skill。每个阶段只给一次机会，用导演自己的校验器（[`src/agent/checks.ts`](src/agent/checks.ts)）数违规条数。
+同一个 Nemotron、同一批 8 个创意各跑 2 轮，唯一变量是子智能体的系统提示里有没有对应的 Skill。每个阶段只给一次机会，用 Harness 自己的校验器（[`src/agent/checks.ts`](src/agent/checks.ts)）数违规条数。两次评测的结果都列出，因为中间的改动本身说明了问题：
 
-| | 不带 Skill | 带 Skill |
-|---|---:|---:|
-| 脚本一次合格 | 0/16 | 6/16 |
-| 脚本平均违规数 | 3.63 | 1.06 |
-| 分镜一次合格 | 0/16 | 8/14 |
-| 分镜平均违规数 | 8.00 | 0.71 |
+| | 不带 Skill（9 月 21 日） | 带 Skill（9 月 21 日） | 不带 Skill（9 月 22 日） | 带 Skill（9 月 22 日） |
+|---|---:|---:|---:|---:|
+| 脚本一次合格 | 0/16 | 6/16 | 13/16 | 15/16 |
+| 脚本平均违规数 | 3.63 | 1.06 | 0.38 | 0.06 |
+| 分镜一次合格 | 0/16 | 8/14 | 0/16 | 7/15 |
+| 分镜平均违规数 | 8.00 | 0.71 | 3.88 | 0.80 |
 
-不带 Skill 时最常见的错误：用中文写图片提示词（35 次）、一个镜头塞多个运镜（29 次）、字幕超长（22 次）、节拍数不对（12 次）、风格词里带数字（10 次）——每一条都会直接毁掉成片。带 Skill 后仍有残留问题（口播偏短、偶尔中文提示词），已反馈进 Skill 文本。校验器查的是形式，不是文案好坏；这次评测与成片任务并行，耗时数字不可信，未列出。完整报告：[脚本](.agents/skills/ad-script-writing/BENCHMARK.md) · [分镜](.agents/skills/storyboard-design/BENCHMARK.md) · [原始数据](eval/results/ablation.json)。复现：`cineloom eval --repeats 2`。
+9 月 22 日的“不带 Skill”基线明显变好，原因是这一天把节拍数、字数上限、镜头数这些硬性约束直接写进了阶段提示词（第一支成片暴露的问题），基线也因此受益——Skill 的边际收益随之缩小，这是应有的诚实结论：能写进提示词的确定性规则就该写进提示词，Skill 留给需要判断的部分（结构选择、品类语感、运镜语言、失败时怎么改）。分镜阶段的差距依然明显：没有 Skill 时最常见的错误是中文写图片提示词、一个镜头塞多个运镜、风格词带数字、让模型画字，每一条都会直接毁掉画面。完整报告：[脚本](.agents/skills/ad-script-writing/BENCHMARK.md) · [分镜](.agents/skills/storyboard-design/BENCHMARK.md) · 原始数据 [第一次](eval/results/ablation.json) · [第二次](eval/results/ablation-v2.json)。复现：`cineloom eval --repeats 2`。
 
 ## Studio
 

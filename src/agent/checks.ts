@@ -97,6 +97,7 @@ export function checkScript(script: Script, brief: Brief): string[] {
     if (!beat.vo?.trim()) problems.push(`${label}: "vo" is empty`)
     else {
       if (!CJK.test(beat.vo)) problems.push(`${label}: voiceover must be in Chinese`)
+      else if (/[A-Za-z]{3,}/.test(beat.vo.replace(brief.brandText, ''))) problems.push(`${label}: voiceover mixes an English word into Chinese (${/[A-Za-z]{3,}/.exec(beat.vo)?.[0]}); write it in Chinese`)
       if (spokenLength(beat.vo) < VO_MIN_CHARS) problems.push(`${label}: voiceover has only ${spokenLength(beat.vo)} characters; write ${VO_MIN_CHARS}-${VO_MAX_CHARS} so the beat is not mostly silence`)
       if (spokenLength(beat.vo) > VO_MAX_CHARS) problems.push(`${label}: voiceover has ${spokenLength(beat.vo)} characters; at most ${VO_MAX_CHARS} fit in 5 seconds`)
     }

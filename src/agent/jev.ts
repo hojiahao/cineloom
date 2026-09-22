@@ -68,6 +68,7 @@ export async function judgeCopy(config: JevConfig, brief: Brief, script: Script)
       absolute_claim: { type: 'noul', instructions: 'Does the voiceover line or title use an absolute or superlative claim (the best, number one, the only, 100%, forever, never), explicitly or by clear implication?', criteria: { true: 'Claims to be best / first / only / 100% / 永不, or clearly implies superiority over all competitors', false: 'Describes taste, feel, a moment, or a plain product fact' } },
       health_effect: { type: 'noul', instructions: 'Does the copy state an effect on the body or health as a fact?', criteria: { true: 'A claimed physiological or medical effect: 提神醒脑, 消除疲劳, 解暑降火, 增强免疫, 减肥瘦身, 修复肌肤, 治疗/缓解 a condition', false: 'Taste, feel, mood, scenery or a figurative phrase (唤醒晨光, 唤醒一天, 清爽一刻, 温暖时光) with no claimed effect on the body' } },
       register: { type: 'choice', instructions: 'Which product category does the vocabulary of the copy belong to?', criteria: { drink: 'tasting, thirst, bubbles, coolness in the mouth', food: 'flavour, aroma, chewing, fullness', skincare: 'skin, moisture, absorption, texture on skin', device: 'operation, keys, speed, build quality, battery', home: 'room, scent, light, rest, gifting', generic: 'no category-specific vocabulary' } },
+      packaging_talk: { type: 'noul', instructions: 'Does the voiceover line mainly describe the packaging, label, typography or materials of the product (e.g. "black serif lettering, kraft-paper texture") instead of the experience of using it?', criteria: { true: 'The line is about how the package or label looks', false: 'The line is about taste, feel, a moment, a benefit or a mood' } },
       naturalness: { type: 'score', instructions: 'How natural does the voiceover line sound when read aloud as Chinese advertising voiceover?', criteria: ['awkward, ungrammatical or unnatural', 'acceptable', 'natural, like a person speaking'] },
     })
     seconds += result.seconds
@@ -80,6 +81,7 @@ export async function judgeCopy(config: JevConfig, brief: Brief, script: Script)
     }
     push('absolute or superlative claim', noul('absolute_claim'))
     if (brief.category !== 'medical') push('claims a bodily or health effect', noul('health_effect'))
+    push('describes the packaging or label instead of the experience', noul('packaging_talk'))
     const register = a.register
     if (register?.type === 'choice') {
       const expected: Record<Brief['category'], string[]> = { general: [], food: ['drink', 'food', 'generic'], health_food: ['food', 'drink', 'generic'], cosmetics: ['skincare', 'generic'], medical: [] }

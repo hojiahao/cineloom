@@ -186,3 +186,13 @@ describe('product-consistency heuristic', () => {
     expect(checkStoryboard({ style: 's', product: 'a slim aluminium can with a teal band that reads "润"', shots: [shot] }, script1, { brandText: '润', product: 'face cream' })).toHaveLength(1)
   })
 })
+
+describe('voiceover language', () => {
+  it('rejects an English word inside a Chinese voiceover line', () => {
+    const script = { structure: 's', beats: [{ beat: 1, job: 'hook', see: 'x', vo: '仪式感，唤醒 mornings 的早晨', text: '唤醒' }, { beat: 2, job: 'payoff', see: 'y', vo: '清晨的第一口，温热流转', text: '第一口' }, { beat: 3, job: 'cta', see: 'z', vo: '醒，清晨一口的仪式感', text: '醒' }] }
+    const brief = { id: 'c', title: 't', product: 'coffee', category: 'food', audience: 'a', message: 'm', ratio: '16:9', durationSeconds: 15, tone: 'warm', brandText: '醒' } as Brief
+    const problems = checkScript(script, brief)
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/mixes an English word/)
+  })
+})
