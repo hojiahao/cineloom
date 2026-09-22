@@ -83,7 +83,7 @@ function render(projects) {
     const shots = project.assets.filter((asset) => asset.id !== 'final-cut' && asset.kind !== 'document').sort((a, b) => (a.shot ?? 0) - (b.shot ?? 0) || a.kind.localeCompare(b.kind))
     return `<section class="project"><h2>${esc(project.title)}</h2><p class="brief">${esc(project.brief)} · ${esc(project.ratio)} · ${project.durationSeconds}s</p>
       <div class="stages">${stages}</div><div class="grid">${shots.map((asset) => assetCard(project, asset)).join('')}</div>
-      ${final ? `<div class="final"><h3>成片</h3><video src="${fileUrl(project.id, final.path)}" controls></video></div>` : ''}</section>`
+      ${final ? `<div class="final"><h3>成片</h3><video src="${fileUrl(project.id, final.path)}" controls></video><p><a href="${fileUrl(project.id, 'reports/delivery.md')}" target="_blank">交付报告</a> · <a href="${fileUrl(project.id, 'script/script.json')}" target="_blank">脚本</a> · <a href="${fileUrl(project.id, 'storyboard/storyboard.json')}" target="_blank">分镜</a> · <a href="${fileUrl(project.id, 'reports/run.jsonl')}" target="_blank">运行记录</a></p></div>` : ''}</section>`
   }).join('')
 }
 
