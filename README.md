@@ -15,27 +15,38 @@
   <a href="#项目说明">项目说明</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#部署说明">部署说明</a> ·
-    <a href="#agent-skills">Agent Skills</a> ·
+  <a href="#成片展示">成片展示</a> ·
+  <a href="#agent-skills">Agent Skills</a> ·
   <a href="#技术栈说明">技术栈</a> ·
   <a href="#当前状态">当前状态</a>
 </p>
 
-**CineLoom（影织）** 是一个跑在单台 NVIDIA DGX Spark 上的广告成片智能体。你说一句创意，它完成写脚本、审文案、排分镜、生图、质检、生视频、剪辑，交付一支可以直接发布的短片。素材和模型全程留在本机。
+**CineLoom（影织）** 是一个跑在单台 NVIDIA DGX Spark 上的广告成片智能体：你说一句创意，它交付一支有画面、有配音、有音乐、字幕正确、文案合规的短片。素材、模型、生成的每一帧全程留在本机。
+
+**它解决的三个痛点，以及对应的做法：**
+
+| 痛点 | 现有 AI 视频工具 | CineLoom |
+|---|---|---|
+| 未发布新品的素材不能上云 | 生图生视频全走云端 API | Nemotron、StepFun、Qwen-Image、Wan2.2 全部跑在一台 Spark 上；无网络也能出片 |
+| 产品在镜头之间变样、画面里出现乱码字 | 每个镜头单独一段提示词，模型画字 | 先出一张过质检的**产品定妆图**，每帧都从它生成；画面里**不让模型画字**，标题字幕在后期用真字体排版 |
+| 生成结果没人把关，返工在最贵的环节 | 生成完再看 | **文案先过《广告法》扫描和独立审稿**才能进生成；**每帧先过视觉质检**（对照定妆图）才能生视频，把返工拦在 20 秒的生图阶段，而不是 6 分钟的生视频阶段 |
+
+**一次真实运行的记录**（2026-09-21，项目 `leng-soda-v2`，本机，未剪辑）：
 
 ```text
-> 给一款还没发布的无糖气泡水做一条 15 秒竖版广告，产品图在 refs/ 里
+> 给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天，清爽。
 
-  ✓ 需求    确认受众与核心信息，立项 summer-soda（9:16 · 15s · 仅本地）
-  ✓ 脚本    3 个节拍：钩子 / 证明 / 行动号召
-  ✓ 合规    拦下“全网第一”“100%”，改写后通过
-  ✓ 分镜    3 个镜头，统一风格行，产品参考图优先
-  ✓ 生图    Qwen-Image · Spark 本地
-  ✓ 质检    Step3-VL 复核产品一致性，镜头 2 重生成 1 次
-  ✓ 生视频  Wan2.2 · 首帧驱动
-  ✓ 成片    projects/summer-soda/cut/final.mp4
+  需求      1.3 s   立项：9:16 · 15 s · 品类 food · 仅本地
+  脚本      5.3 s   第 1 稿被校验器退回（口播过短），第 2 稿通过
+  合规      1.1 s   独立审稿智能体通过，用词扫描 0 项
+  分镜      4.3 s   3 个镜头 · 风格行 · 产品描述一次成型
+  定妆图            第 1 张被质检拒绝（标签侧面多余小字）→ 第 2 张 90 分通过
+  首帧 ×3          镜头 1、2 各被拒 1 次（罐子倾斜 / 品牌字不符）后通过；镜头 3 一次通过
+  视频 ×3          Wan2.2 14B · 355 / 365 / 358 s
+  成片             配音 ×3 + 音乐 9.1 s + 混音 + 调色 + 字幕 = 45 s
+  ────────────────────────────────────────────────
+  总计   2044 s    2 次重生成，全程 DGX Spark 本地，1080×1920 · 24 fps · 有声
 ```
-
-<sub>上面是流程示意，不是运行记录；真实运行数据见<a href="#当前状态">当前状态</a>。</sub>
 
 > 第三届 NVIDIA DGX Spark 黑客松 · Agent Skills 开发挑战赛参赛作品 · 方舟团队
 
@@ -66,7 +77,7 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 ### 架构
 
 <p align="center">
-  <img src="docs/assets/architecture.png" alt="CineLoom 系统架构：创作者 → DeepSeek Harness 导演智能体 → Agent Skills → cineloom CLI → projects 记录 → Studio 看板；Nemotron、Step3-VL、ComfyUI 均在 DGX Spark 本地" width="760">
+  <img src="docs/assets/architecture.png" alt="CineLoom 系统架构：创作者 → CineLoom Harness（导演智能体与子智能体）→ Agent Skills → cineloom CLI → projects 记录 → Studio；Nemotron、Step3-VL、ComfyUI 均在 DGX Spark 本地" width="760">
 </p>
 
 <p align="center"><sub><a href="docs/architecture/cineloom-architecture.html">可交互版本</a>（缩放、搜索、关系追踪）· 用 <a href="https://github.com/tt-a1i/archify">archify</a> 绘制</sub></p>
@@ -77,6 +88,10 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 - **Skill 是开放格式，不绑定运行时。** 九个 Skill 通过 `cineloom` 子命令做事，输入输出都是文件和 JSON。CineLoom Harness 是自带的运行框架；同一批 Skill 也能被 Claude Code、Codex、DeepSeek Harness 等支持 Agent Skills 的客户端直接加载。
 - **模型按实测分工，不按想象分工。** Nemotron 关掉思考后 0.3 秒就能给出结构化结果，适合规划、文案、审稿和英文提示词；Step3-VL-10B 关不掉思考、约 18 token/秒，做长文本审稿会超时，但看图质检只要 10 秒左右——所以它只负责“看”。
 - **记录即界面。** Studio 只读 `projects/` 目录里的记录，不持有状态。
+
+## 成片展示
+
+四支多行业案例（饮料 · 咖啡 · 护肤 · 数码，竖版与横版）正在本机生成，完成后逐支放在这里：成片、每个镜头的首帧、质检记录和实测耗时。不放未经生成的示意图。
 
 ## 快速开始
 
@@ -163,13 +178,13 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | Skill | 阶段 | 做什么 | 依赖的命令 / 模型 |
 |---|---|---|---|
 | [`ad-brief-intake`](.agents/skills/ad-brief-intake/SKILL.md) | 需求 | 只问阻塞项，其余自己定并说明，立项 | `cineloom project init` |
-| [`ad-script-writing`](.agents/skills/ad-script-writing/SKILL.md) | 脚本 | 5 秒一个节拍，口播字数预算，首拍无声可懂 | Nemotron / Step3-VL |
-| [`ad-compliance-review`](.agents/skills/ad-compliance-review/SKILL.md) | 合规 | 《广告法》用词筛查，`block` 级必须改写 | `cineloom copy-check` |
+| [`ad-script-writing`](.agents/skills/ad-script-writing/SKILL.md) | 脚本 | 5 秒一个节拍，口播 8–18 字，标题 ≤8 字，品类语感 | Nemotron |
+| [`ad-compliance-review`](.agents/skills/ad-compliance-review/SKILL.md) | 合规 | 《广告法》用词扫描 + 独立审稿智能体，`block` 级必须改写 | `cineloom copy-check` · Nemotron（另一个智能体） |
 | [`ad-reference-breakdown`](.agents/skills/ad-reference-breakdown/SKILL.md) | 拉片 | 参考片切镜、逐镜描述、映射到新产品 | `cineloom shots` · Step3-VL |
-| [`storyboard-design`](.agents/skills/storyboard-design/SKILL.md) | 分镜 | 统一风格行、单镜单动作、参考图分配 | Nemotron |
-| [`spark-local-media-generation`](.agents/skills/spark-local-media-generation/SKILL.md) | 生图 / 生视频 | 本地生成，先图后视频 | `cineloom image` / `video` · Qwen-Image · Wan2.2 |
-| [`shot-quality-gate`](.agents/skills/shot-quality-gate/SKILL.md) | 质检 | 产品一致性复核，按问题类型重生成，最多两次 | `cineloom qa` · Step3-VL |
-| [`final-cut-assembly`](.agents/skills/final-cut-assembly/SKILL.md) | 成片 | 统一规格拼接、字幕、配乐、交付报告 | `cineloom cut` · ffmpeg |
+| [`storyboard-design`](.agents/skills/storyboard-design/SKILL.md) | 分镜 | 产品只描述一次、风格行不带数字、画面无字、单镜单运镜、电影运镜语言 | Nemotron |
+| [`spark-local-media-generation`](.agents/skills/spark-local-media-generation/SKILL.md) | 生图 / 生视频 | 定妆图 → 参考图首帧（2 候选）→ 首帧驱动视频 | `cineloom image` / `video` · Qwen-Image(-Edit) · Wan2.2 14B |
+| [`shot-quality-gate`](.agents/skills/shot-quality-gate/SKILL.md) | 质检 | 对照定妆图：产品不符、多余文字、乱码、不该有的人手一票否决；按问题类型改提示词重生成 | `cineloom qa` · Step3-VL |
+| [`final-cut-assembly`](.agents/skills/final-cut-assembly/SKILL.md) | 成片 | 定版、真字体标题字幕（缺字即失败）、离线配音、本地音乐并自动压低、转场调色 | `cineloom cut` · ffmpeg · Kokoro · ACE-Step |
 | [`spark-model-scheduler`](.agents/skills/spark-model-scheduler/SKILL.md) | 贯穿 | 统一内存先量后排，分阶段加载释放 | `cineloom mem` |
 
 ### 带 Skill 和不带 Skill 的差别
@@ -207,7 +222,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 
 | 组件 | 用途 |
 |---|---|
-| `stepfun-ai/Step3-VL-10B-FP8`（本地，vLLM） | 中文文案润色；镜头质检；参考片逐镜理解 |
+| `stepfun-ai/Step3-VL-10B-FP8`（本地，vLLM） | 视觉质检：定妆图与每一帧对照复核；参考片逐镜理解 |
 | Step-3.7-Flash（StepFun 开放平台 API，可选） | 创意总监级的方案发散。198B 参数，IQ4_XS 量化仍需约 116 GB，无法与扩散模型同机共存，因此走云端并在记录里标注 `cloud` |
 
 **其他开源组件**

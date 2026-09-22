@@ -15,8 +15,8 @@ looks like a stalled job to the person watching.
 
 | Stage | Skill | Output in `projects/<id>/` |
 |---|---|---|
-| brief | `ad-brief-intake` | `state.json`, `brief.md` |
-| script | `ad-script-writing` | `script/script.md` |
+| brief | `ad-brief-intake` | `state.json`, `brief.json` |
+| script | `ad-script-writing` | `script/script.json`, `script/copy.txt` |
 | compliance | `ad-compliance-review` | `reports/compliance.json` |
 | storyboard | `storyboard-design` | `storyboard/storyboard.json` |
 | frames | `spark-local-media-generation` | `refs/product.png` (hero still), then `frames/shot_NNN.png` anchored to it |

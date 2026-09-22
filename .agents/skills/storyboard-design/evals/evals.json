@@ -4,7 +4,7 @@
     "question": "脚本过审了，出分镜。",
     "expected_skill": "storyboard-design",
     "expected_script": null,
-    "ground_truth": "The agent writes one style line and repeats it verbatim in every image prompt, produces one shot per 5 s beat with framing, exactly one camera move, an English image prompt with subject first and quoted on-screen text with its position, a separate video prompt that describes motion only, product references first with at most three per shot, a visible must_show, and saves storyboard/storyboard.json in the documented schema."
+    "ground_truth": "The agent describes the product once in \"product\" (container, material, colours, label text in quotes) and never re-describes it per shot, writes one \"style\" line with no numbers or lens specs, produces one shot per 5 s beat with framing that varies between neighbours, exactly one camera move per shot, an English image_prompt with subject first that asks for no captions or slogans, a separate English video_prompt describing motion only (ending with \"No people and no hands enter the frame\" for product-only shots), a visible must_show, and saves storyboard/storyboard.json in the documented schema."
   },
   {
     "id": "storyboard-design-eval-002-two-actions",

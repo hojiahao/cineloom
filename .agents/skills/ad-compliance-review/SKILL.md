@@ -18,7 +18,7 @@ phrase caught late costs a full regeneration. Review text before media.
 
 ## Workflow
 
-1. Collect every user-visible string: voiceover, on-screen text, subtitles, and any text an image prompt asks the model to render. Save it as `projects/<id>/script/copy.txt`, one line per string.
+1. Collect every user-visible string: voiceover, on-screen titles and the end-card message. (Nothing else reaches the screen: frames carry no generated text.) Save it as `projects/<id>/script/copy.txt`, one line per string.
 2. Run the deterministic scan. It is local, fast, and reproducible:
 
    ```bash
@@ -27,7 +27,7 @@ phrase caught late costs a full regeneration. Review text before media.
 
    The category comes from the brief. Exit code 1 means at least one `block` finding.
 3. For each finding, read the matching section of `references/rules.md` before judging. The scan matches wording; whether a claim is substantiated depends on the brief's proof points.
-4. Review what a wording scan cannot see: implied comparison with competitors, claims made only by the visuals, statistics without a stated source.
+4. Review what a wording scan cannot see: implied superlatives and comparisons with competitors, body or health effects claimed for food and drink ("提神醒脑", "解暑降火"), efficacy claims on cosmetics, statistics without a stated source, and register borrowed from another category (skincare vocabulary on a soda). The reviewer must not be the agent that wrote the copy; in CineLoom Harness it is a separate agent with this skill and a different system prompt.
 5. Rewrite every `block` finding - keep the selling point, drop the restricted form - and rescan until the exit code is 0. Resolve `review` findings with proof from the brief, or rewrite them too.
 
 ## Severity

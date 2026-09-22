@@ -32,14 +32,19 @@ then open the project so every later stage has one source of truth.
    ```
 
    The id is lowercase letters, digits and dashes.
-5. Write `projects/<id>/brief.md` with the fields below. Put user-supplied reference
+5. Write `projects/<id>/brief.json` with the fields below (this is what every later stage reads). Put user-supplied reference
    images in `projects/<id>/refs/` and list them.
 
-## brief.md fields
+## brief.json fields
 
-Product · Category · Audience · Single message · Proof points the user can substantiate ·
-Platform, ratio, duration · Tone and visual style · Must show · Must avoid · References ·
-Delivery route (local only, or cloud allowed for which step).
+```json
+{"id": "summer-soda", "title": "夏日气泡水", "product": "...", "category": "food", "audience": "...",
+ "message": "the one thing the viewer should remember, in Chinese", "ratio": "9:16", "durationSeconds": 15,
+ "tone": "tone and visual style, in English", "brandText": "the brand as printed on the product, at most 4 common characters",
+ "proofPoints": ["claims the user can substantiate"], "references": ["refs/can_front.png"], "delivery": "local only | cloud allowed for <step>"}
+```
+
+`brandText` matters more than it looks: it is the only lettering that will ever appear inside a generated frame (on the product label, via the hero still), so keep it to common characters - the image model draws rare ones wrong ("泠" came out as "冷").
 
 ## Notes
 

@@ -18,7 +18,7 @@ three seconds and spend the rest proving it.
 
 ## Workflow
 
-1. Read `projects/<id>/brief.md`. The "single message" is the spine; every beat serves it.
+1. Read `projects/<id>/brief.json`. The "single message" is the spine; every beat serves it.
 2. Pick one structure and name it in the script header:
    - Problem -> product -> payoff (daily-use goods)
    - Sensory close-ups -> reveal (food, drink, beauty)
@@ -28,19 +28,20 @@ three seconds and spend the rest proving it.
 4. For each beat write: what we see (one subject, one action), voiceover, on-screen text, and the beat's job (hook, proof, payoff, call to action).
 5. Budget words: Mandarin voiceover reads at about 4 characters per second. Write 10-18 characters per 5 s beat and count them. Over 18 cannot be read in time; under 8 leaves most of the beat silent - a model asked only for a maximum tends to answer with four characters.
 6. On-screen text is a title of at most 8 characters per beat. It is typeset in post-production in a real font, never drawn by the image model, so write exactly what should appear: Chinese characters, digits and ordinary full-width punctuation only - no emoji, no symbols, no doubled marks, and no closing punctuation on a title.
-7. Write `projects/<id>/script/script.md`, then hand the copy to `ad-compliance-review` before anything is generated.
+7. Write `projects/<id>/script/script.json`, then hand the copy to `ad-compliance-review` before anything is generated.
 
 ## Output format
 
-```markdown
-# <title> - <duration>s - <ratio> - structure: <name>
-## Beat 1 (0-5s) - hook
-See: ...
-VO: ...            (n chars)
-Text: "..."
-## Beat 2 (5-10s) - proof
-...
+```json
+{"structure": "sensory close-ups -> reveal",
+ "beats": [
+  {"beat": 1, "job": "hook",   "see": "ice cracking around the can, backlit", "vo": "冰块轻响，夏天就此开罐", "text": "开罐"},
+  {"beat": 2, "job": "proof",  "see": "...", "vo": "...", "text": "..."},
+  {"beat": 3, "job": "payoff", "see": "...", "vo": "...", "text": "..."}
+ ]}
 ```
+
+`see` is in English (it feeds the storyboard); `vo` and `text` are in Chinese. The validator that accepts or rejects this file is `src/agent/checks.ts` - beat count, 8-18 spoken characters, title length, caption characters and the compliance scan.
 
 ## Quality bar
 

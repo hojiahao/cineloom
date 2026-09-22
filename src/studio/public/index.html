@@ -46,6 +46,7 @@
 <body>
 <header>
   <h1>Cine<span>Loom</span></h1><div class="sub">影织 · CineLoom Harness 工作台</div>
+  <input id="token" type="password" placeholder="访问令牌（可选）" style="font:inherit;background:#101116;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;width:150px" title="服务端设置了 CINELOOM_STUDIO_TOKEN 时需要">
   <div class="mem"><span id="memText">统一内存 …</span><div class="bar"><i id="memBar" style="width:0"></i></div></div>
 </header>
 <main>
@@ -98,9 +99,11 @@ async function refreshJob() {
   const html = `<pre class="joblog">${lines}${tail}</pre>`
   if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; box.firstChild.scrollTop = 1e6 }
 }
+try { document.getElementById('token').value = localStorage.getItem('cineloom-token') || '' } catch {}
+document.getElementById('token').addEventListener('change', (e) => { try { localStorage.setItem('cineloom-token', e.target.value) } catch {} })
 document.getElementById('go').addEventListener('click', async () => {
   const durationSeconds = Number(document.getElementById('duration').value) || undefined
-  const response = await fetch('/api/harness', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
+  const response = await fetch('/api/harness', { method: 'POST', headers: { 'content-type': 'application/json', 'x-cineloom-token': document.getElementById('token').value }, body: JSON.stringify({
     brief: document.getElementById('brief').value, ratio: document.getElementById('ratio').value, durationSeconds, videoModel: document.getElementById('videoModel').value }) })
   if (!response.ok) alert((await response.json()).error)
   refreshJob()
