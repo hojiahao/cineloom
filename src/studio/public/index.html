@@ -108,6 +108,8 @@ document.getElementById('go').addEventListener('click', async () => {
   else document.getElementById('brief').value = ''
   refreshJob()
 })
+// A brief can be handed over in the URL fragment: /#给一款叫“冷”的… fills the box without submitting.
+try { const preset = decodeURIComponent(location.hash.slice(1)); if (preset) document.getElementById('brief').value = preset } catch {}
 setInterval(refreshJob, 2000); refreshJob()
 
 let last = ''
