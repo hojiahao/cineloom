@@ -215,7 +215,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   // The hero still: one approved picture of the product that every shot is generated from,
   // so the can in shot 3 is the can in shot 1. A text description alone let it drift.
   await mkdir(join(dir, 'refs'), { recursive: true })
-  const heroShot: Shot = { shot: 0, seconds: 0, framing: 'product', camera: 'static', image_prompt: '', video_prompt: '', on_screen_text: '', must_show: `exactly one product container, upright and fully visible, whose label reads "${brief.brandText}" clearly and correctly. Finish, proportions and size are not judged here` }
+  const heroShot: Shot = { shot: 0, seconds: 0, framing: 'product', camera: 'static', image_prompt: '', video_prompt: '', on_screen_text: '', must_show: `exactly one ${brief.product}, fully visible and centred, matching this description: ${storyboard.product}. Its brand lettering reads "${brief.brandText}" clearly and correctly. Finish, proportions and size are not judged here` }
   let hero: { path: string; verdict: QaVerdict } | undefined
   let heroPrompt = composeProductPrompt(storyboard)
   for (let attempt = 0; attempt <= MAX_QA_REGENERATIONS; attempt++) {

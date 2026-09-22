@@ -27,7 +27,7 @@ that belongs to the same film.
 6. Vary the shots like a cinematographer: change framing between neighbours (macro -> medium -> wide), give each shot a motivated light source, and build to the product reveal.
 7. `image_prompt` in English: subject first, then action, setting, light, framing.
 8. `video_prompt` in English, separate from the look: what moves, exactly one camera move described the way a cinematographer would ("slow push-in with a subtle, breath-like handheld float"), and what stays still. For product-only shots end with "No people and no hands enter the frame" - otherwise the video model tends to add a hand.
-9. `must_show` is what the quality gate checks, so write something visible and specific.
+9. `must_show` is what the quality gate checks on a single still frame, so write something visible and specific in one picture: the product, its placement, what surrounds it. Never motion ("cursor moving", "steam rising"), never screen or UI content, never sound. Motion belongs in `video_prompt`.
 10. If a reference breakdown exists, keep its shot count, durations, framing and camera moves; replace subject, product and scene.
 
 ## Semantic checks
@@ -66,3 +66,4 @@ is rejected by the validator before anything is generated.
 - Text requested inside the image, or a style line with numbers in it: it shows up as stray lettering and the gate rejects the frame.
 - Re-describing the product in a shot: the description competes with the hero still and the product drifts.
 - The same framing three times in a row: the film reads as one long shot.
+- A shot built around a screen, a display or UI: image models invent gibberish interfaces and the gate rejects them. Show the device, not what it shows.

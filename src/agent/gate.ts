@@ -37,7 +37,7 @@ async function runGate(reviewer: ModelEndpoint, frame: string, shot: Shot, produ
 The frame must show: ${shot.must_show}
 Reject (pass=false) if ANY of these is true:
 - the required content is missing;
-${productReference ? '- the product in image 1 is a different product from image 2: another container type, other main colours, or different brand lettering. Ignore condensation, lighting, camera angle, reflections, scale and fine print - those are expected to change between shots;\n' : ''}- there is ANY text outside the product label: captions, slogans, subtitles, numbers, lens specs, watermarks;
+${productReference ? '- the product in image 1 is a different product from image 2: another kind of object, other main colours, or different brand lettering. Ignore condensation, lighting, camera angle, reflections, scale and fine print - those are expected to change between shots;\n' : ''}- there is text that is not printed on the product itself: captions, slogans, subtitles, floating numbers, lens specs, watermarks. Lettering that belongs to the product (its label, key legends, packaging copy) is fine;
 - any lettering is garbled, duplicated or nonsensical;
 ${/\b(hand|hands|person|people|student|man|woman|girl|boy|model|holding|drinking|sipping)\b/i.test(`${shot.must_show} ${shot.image_prompt}`) ? '' : '- a person, a hand or fingers appear although this shot does not call for them;\n'}- extra limbs, malformed hands or a distorted face;
 - the product is cropped, floating or physically implausible, or a drink that should be clear is an odd colour.
