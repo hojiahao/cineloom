@@ -39,7 +39,7 @@ describe('Jev structured judge', () => {
     expect(jev.calls).toHaveLength(2)
     expect(jev.calls[0].auth).toBe('Bearer k')
     expect(jev.calls[0].model).toBe('jev-latest')
-    expect(Object.keys(jev.calls[0].questions)).toEqual(['absolute_claim', 'health_effect', 'register', 'naturalness'])
+    expect(Object.keys(jev.calls[0].questions)).toEqual(['absolute_claim', 'health_effect', 'register', 'packaging_talk', 'naturalness'])
     const beat1 = result.findings.filter((f) => f.beat === 1)
     expect(beat1.map((f) => [f.issue, f.severity])).toEqual([
       ['absolute or superlative claim', 'block'],
