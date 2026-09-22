@@ -98,7 +98,7 @@ describe('skill checks (shared by the director and the evals)', () => {
     const script3 = { ...good, beats: [good.beats[0]!] }
     expect(checkStoryboard({ style, product: 'a slim aluminium can with a teal band that reads "冷"', shots: [shot] }, script3, brief)).toEqual([])
     expect(checkStoryboard({ style, product: 'a slim aluminium can with a teal band that reads "冷"', shots: [shot] }, script3, { brandText: '润', product: 'face cream' })).toHaveLength(2)
-    const bad = { ...shot, camera: 'push-in, then pan', image_prompt: '一罐气泡水' }
+    const bad = { ...shot, camera: 'push-in then pan', image_prompt: '一罐气泡水' }
     const problems = checkStoryboard({ style, product: "a can", shots: [bad] }, script3)
     expect(problems).toHaveLength(2)
   })

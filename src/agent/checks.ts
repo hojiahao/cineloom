@@ -127,7 +127,8 @@ export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: 
     }
     if (!shot.video_prompt?.trim()) problems.push(`${label}: video_prompt is empty`)
     else if (CJK.test(shot.video_prompt)) problems.push(`${label}: video_prompt must be in English and must not contain on-screen text`)
-    if (!shot.camera?.trim() || /\b(and|then)\b|,/.test(shot.camera)) problems.push(`${label}: camera must be exactly one move`)
+    const moves = (shot.camera ?? '').match(/\b(push|pull|pan|tilt|orbit|dolly|zoom|track|crane|rack|whip|static|handheld|arc)\b/gi) ?? []
+    if (!shot.camera?.trim() || /\b(then|followed by)\b/i.test(shot.camera) || new Set(moves.map((m) => m.toLowerCase())).size > 1) problems.push(`${label}: camera must be exactly one move (found: ${shot.camera})`)
     if (!shot.must_show?.trim()) problems.push(`${label}: must_show is empty; the quality gate needs something visible to check`)
     if (spokenLength(shot.on_screen_text ?? '') > TEXT_MAX_CHARS) problems.push(`${label}: on_screen_text is longer than ${TEXT_MAX_CHARS} characters and will warp`)
   }

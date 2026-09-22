@@ -123,7 +123,7 @@ export async function chatJson<T>(
     // The last attempts get the model's reasoning mode: a small model that has been told the same
     // rule three times usually needs to think, not to be told a fourth time.
     const careful = attempt >= maxAttempts - 1 && options.thinking === false
-    const result = await chat(endpoint, { ...options, user, ...(careful ? { thinking: true, maxTokens: Math.max(options.maxTokens ?? 6000, 8000) } : {}) })
+    const result = await chat(endpoint, { ...options, user, ...(careful ? { thinking: true, maxTokens: Math.max(options.maxTokens ?? 6000, 16000) } : {}) })
     seconds += result.seconds
     completionTokens += result.completionTokens
     let problems: string[]
