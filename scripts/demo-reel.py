@@ -154,7 +154,7 @@ def card_pain(path: Path) -> None:
         panel(draw, (x, y + 40, x + 520, y + 560))
         draw.text((x + 40, y + 80), f'0{index + 1}', font=font(40, 'Bold'), fill=GOLD)
         draw.text((x + 40, y + 150), title, font=font(44, 'Bold'), fill=TEXT)
-        paragraph(draw, (x + 40, y + 240), body, font(30), 440, fill=DIM)
+        paragraph(draw, (x + 40, y + 240), body, font(30), 450, fill=DIM)
     draw.text((120, y + 660), 'CineLoom 的答案：整条流水线放在一台 DGX Spark 上，每一步先校验再生成，返工只发生在最便宜的阶段。', font=font(30), fill=TEXT)
     footer(draw)
     image.save(path)
