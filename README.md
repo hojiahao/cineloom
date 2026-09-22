@@ -341,7 +341,9 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 - [x] 34 个测试通过：Harness 全流程用脚本化的模型服务和假 ComfyUI 验证，ffmpeg 为真
 - [x] 多行业案例片：饮料（竖版）、机械键盘（横版）、保湿面霜（竖版）已入“成片展示”；咖啡（横版）重做中
 - [ ] 音效；配音音色与情绪的选择
-- [ ] 演示视频（B 站）与“十日谈”发布
+- [x] 每个项目自动生成交付报告 `reports/delivery.md`：逐镜头质检记录、各阶段实测、内存、生成位置与待确认事项
+- [x] 演示视频脚本（`docs/demo-script.md`）与“十日谈”征文草稿（`docs/essay-十日谈.md`）
+- [ ] 演示视频录制上传（B 站）与征文发布
 
 本仓库不会出现未经实测的性能数字。
 
@@ -355,6 +357,7 @@ src/                     cineloom CLI、媒体管线与 Studio（TypeScript）
 workflows/               ComfyUI API 格式的工作流模板
 deploy/spark/            本地推理栈（compose）、Harness 提供方配置
 scripts/                 模型下载、一键启动
+docs/                    架构图、开发日志、演示脚本、征文草稿
 eval/                    评测用创意与原始结果
 tests/                   单元测试与端到端流水线测试
 ```

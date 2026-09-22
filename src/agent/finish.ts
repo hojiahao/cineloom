@@ -6,6 +6,7 @@ import { assembleFilm, clipStart, filmLength, fontCovers, stillToClip } from '..
 import { memoryStatus } from '../lib/memory.js'
 import { buildAss } from '../lib/titles.js'
 import type { Brief, Script, Storyboard } from './checks.js'
+import { writeDeliveryReport } from './delivery.js'
 
 export const FINAL_SIZE: Record<string, [number, number]> = { '9:16': [1080, 1920], '16:9': [1920, 1080], '1:1': [1080, 1080] }
 export const CROSSFADE_SECONDS = 0.4
@@ -98,5 +99,6 @@ export async function finishFilm(input: FinishInput): Promise<string> {
 
   const finalCut = join(dir, 'cut', 'final.mp4')
   await assembleFilm(clipPaths, finalCut, { width, height, fps: 24, durations, crossfadeSeconds: CROSSFADE_SECONDS, ass, audio: soundtrack })
+  await writeDeliveryReport(dir, brief, script, storyboard, finalCut)
   return finalCut
 }
