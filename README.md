@@ -60,7 +60,7 @@
 
 <!-- video:soda-9x16 -->
 
-https://github.com/user-attachments/assets/6b3847eb-c4db-4458-b654-bbe4ec3ef857
+https://github.com/user-attachments/assets/495bebb6-a63a-409f-8290-4b5b3d02419a
 
 <p align="center"><sub>原片规格：1080×1920（竖版）· 24 fps · 实际时长 16.8 秒（含 3 秒结尾定版）· 配音与音乐均为本地生成 · 制作总耗时 2256 秒 · 质检重生成 1 次</sub></p>
 
