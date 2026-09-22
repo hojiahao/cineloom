@@ -233,6 +233,10 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
     await setStage(brief.id, 'frames', 'failed', `product hero still rejected ${MAX_QA_REGENERATIONS + 1} times: ${hero!.verdict.issues[0] ?? ''}`)
     throw new Error(`The product hero still never passed the gate: ${hero!.verdict.issues.join('; ')}`)
   }
+  if (!hero!.verdict.pass) {
+    await setStage(brief.id, 'frames', 'failed', `hero still rejected ${MAX_QA_REGENERATIONS + 1} times: ${hero!.verdict.issues[0] ?? ''}`)
+    throw new Error(`The product hero still failed the gate ${MAX_QA_REGENERATIONS + 1} times (${hero!.verdict.issues.join('; ')}). Every frame is anchored to it, so the film cannot continue with the wrong product.`)
+  }
   await addAsset(brief.id, { id: 'product-hero', kind: 'image', stage: 'frames', path: hero!.path.slice(dir.length + 1), execution: 'local-dgx-spark', model: 'qwen_image_lightning', note: `gate ${hero!.verdict.score}` })
 
   await enterPhase(comfy, 'frames (Qwen-Image-Edit)', record)
