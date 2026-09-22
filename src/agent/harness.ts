@@ -79,7 +79,10 @@ Return JSON only:
     },
     checkBrief,
   )
-  const brief = { ...briefRun.value, id: options.id ?? briefRun.value.id }
+  // What the request states outright is not the model's to decide: the coffee brief asked for
+  // 横版 and the intake agent still chose 9:16. Explicit user words win over the agent's choice.
+  const stated = statedFormat(options.brief)
+  const brief = { ...briefRun.value, id: options.id ?? briefRun.value.id, ...(options.ratio ? { ratio: options.ratio as Brief['ratio'] } : stated.ratio ? { ratio: stated.ratio } : {}), ...(options.durationSeconds ? { durationSeconds: options.durationSeconds } : stated.durationSeconds ? { durationSeconds: stated.durationSeconds } : {}) }
   rejectedAttempts.brief = briefRun.rejected.length
   await createProject({ id: brief.id, title: brief.title, brief: options.brief, ratio: brief.ratio, durationSeconds: brief.durationSeconds })
   const dir = projectDir(brief.id)
@@ -272,4 +275,12 @@ Return JSON only: {"image_prompt": "..."}`,
     2,
   )
   return run.value.image_prompt
+}
+
+/** Aspect ratio and duration stated in plain words in the request itself. */
+export function statedFormat(request: string): { ratio?: Brief['ratio']; durationSeconds?: number } {
+  const ratio = /横版|横屏|16:9|16：9/.test(request) ? '16:9' : /竖版|竖屏|9:16|9：16/.test(request) ? '9:16' : /方形|方版|1:1|1：1/.test(request) ? '1:1' : undefined
+  const seconds = /(\d+)\s*秒/.exec(request)?.[1]
+  const durationSeconds = seconds && Number(seconds) % 5 === 0 && Number(seconds) >= 5 && Number(seconds) <= 30 ? Number(seconds) : undefined
+  return { ratio, durationSeconds }
 }

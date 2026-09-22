@@ -147,3 +147,13 @@ describe('captions', () => {
     expect(captionProblems('title', '清爽。', true)[0]).toMatch(/no closing punctuation/)
   })
 })
+
+import { statedFormat } from '../src/agent/harness.js'
+
+describe('stated format wins over the intake agent', () => {
+  it('reads 横版 / 竖版 and a duration from the request', () => {
+    expect(statedFormat('给“醒”做一条 15 秒横版广告')).toEqual({ ratio: '16:9', durationSeconds: 15 })
+    expect(statedFormat('20 秒竖版种草视频')).toEqual({ ratio: '9:16', durationSeconds: 20 })
+    expect(statedFormat('一条广告')).toEqual({ ratio: undefined, durationSeconds: undefined })
+  })
+})
