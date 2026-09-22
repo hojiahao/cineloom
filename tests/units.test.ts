@@ -98,7 +98,7 @@ describe('skill checks (shared by the director and the evals)', () => {
     const script3 = { ...good, beats: [good.beats[0]!] }
     expect(checkStoryboard({ style, product: 'a slim aluminium can with a teal band that reads "冷"', shots: [shot] }, script3)).toEqual([])
     const bad = { ...shot, camera: 'push-in, then pan', image_prompt: '一罐气泡水' }
-    const problems = checkStoryboard({ style, product: 'a can', shots: [bad] }, script3)
+    const problems = checkStoryboard({ style, product: "a can", shots: [bad] }, script3)
     expect(problems).toHaveLength(2)
   })
 })
@@ -162,5 +162,17 @@ describe('lenient JSON extraction', () => {
   it('repairs trailing commas and typographic quotes', () => {
     expect(extractJson('{"a": [1, 2,], "b": {"c": 1,},}')).toEqual({ a: [1, 2], b: { c: 1 } })
     expect(extractJson('{“k”: “v”}')).toEqual({ k: 'v' })
+  })
+})
+
+describe('storyboard must describe this brief\'s product', () => {
+  const style = 'soft light'
+  const shot = { shot: 1, seconds: 5, framing: 'macro', camera: 'push-in', image_prompt: 'the product on a table', video_prompt: 'Static.', on_screen_text: '', must_show: 'the jar' }
+  const script = { structure: 's', beats: [{ beat: 1, job: 'hook', see: 'x', vo: '指尖轻触，一夜润泽', text: '润' }] }
+  it('rejects the skill example copied in place of a face cream', () => {
+    const copied = checkStoryboard({ style, product: 'a slim matte-silver aluminium can with a teal band whose label reads "冷"', shots: [shot] }, script, { brandText: '润', product: 'moisturising face cream' })
+    expect(copied.some((p) => p.includes('does not mention "润"'))).toBe(true)
+    expect(copied.some((p) => p.includes('example from the skill'))).toBe(true)
+    expect(checkStoryboard({ style, product: 'a frosted white glass jar with a gold lid whose label reads "润"', shots: [shot] }, script, { brandText: '润', product: 'moisturising face cream' })).toEqual([])
   })
 })

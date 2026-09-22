@@ -109,11 +109,14 @@ export function checkScript(script: Script, brief: Brief): string[] {
   return problems
 }
 
-export function checkStoryboard(storyboard: Storyboard, script: Script): string[] {
+export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: Pick<Brief, 'brandText' | 'product'>): string[] {
   const problems: string[] = []
   const shots = Array.isArray(storyboard.shots) ? storyboard.shots : []
   if (!storyboard.style?.trim()) problems.push('style line is missing')
   if (!storyboard.product?.trim()) problems.push('product description is missing: describe container type, material, colours and label once')
+  // The hero still is generated from this sentence. A copied example (a soda can for a face cream) went unnoticed once.
+  else if (brief?.brandText && !storyboard.product.includes(brief.brandText)) problems.push(`product must describe THIS brief's product (${brief.product}) with the label text "${brief.brandText}" in quotes; it does not mention "${brief.brandText}"`)
+  if (storyboard.product?.includes('matte-silver aluminium can') && !/can|罐|铝/i.test(brief?.product ?? 'x')) problems.push('product is the example from the skill, not this brief\'s product')
   if (shots.length !== script.beats.length) problems.push(`one shot per beat: expected ${script.beats.length} shots, got ${shots.length}`)
   for (const shot of shots) {
     const label = `shot ${shot.shot}`

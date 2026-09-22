@@ -182,7 +182,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
     planner,
     { system: await agentPrompt('storyboard artist', 'storyboard-design'), thinking: false, maxTokens: 5000, temperature: 0.4, user: storyboardUserPrompt },
     async (storyboard) => {
-      const problems = checkStoryboard(storyboard, script)
+      const problems = checkStoryboard(storyboard, script, brief)
       if (problems.length === 0 && jev) {
         const judged = await judgeStoryboard(jev, storyboard)
         await record('storyboard', 'jev', undefined, { execution: 'cloud', model: judged.model, seconds: judged.seconds, inputTokens: judged.inputTokens, problems: judged.problems, notes: judged.notes })
@@ -193,7 +193,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
     },
     4,
   )
-  failIfHardProblems('storyboard', checkStoryboard(storyboardRun.value, script), storyboardRun.attempts)
+  failIfHardProblems('storyboard', checkStoryboard(storyboardRun.value, script, brief), storyboardRun.attempts)
   if (storyboardRun.unresolved.length) log(`  storyboard accepted with ${storyboardRun.unresolved.length} unresolved semantic finding(s) after ${storyboardRun.attempts} attempts`)
   const storyboard = storyboardRun.value
   rejectedAttempts.storyboard = storyboardRun.rejected.length
@@ -217,14 +217,21 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   await mkdir(join(dir, 'refs'), { recursive: true })
   const heroShot: Shot = { shot: 0, seconds: 0, framing: 'product', camera: 'static', image_prompt: '', video_prompt: '', on_screen_text: '', must_show: `exactly one product container, upright and fully visible, whose label reads "${brief.brandText}" clearly and correctly. Finish, proportions and size are not judged here` }
   let hero: { path: string; verdict: QaVerdict } | undefined
+  let heroPrompt = composeProductPrompt(storyboard)
   for (let attempt = 0; attempt <= MAX_QA_REGENERATIONS; attempt++) {
     const path = join(dir, 'refs', `product${attempt ? `_r${attempt}` : ''}.png`)
-    const image = await generateImage(comfy, { prompt: composeProductPrompt(storyboard), size: '1328x1328', output: path })
+    const image = await generateImage(comfy, { prompt: heroPrompt, size: '1328x1328', output: path })
     const verdict = await qualityGate(reviewer, path, heroShot)
     log(`▸ product hero ${image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
     await record('frames', 'product-hero', reviewer, { attempt, imageSeconds: image.seconds, ...verdict })
     if (!hero || verdict.score > hero.verdict.score) hero = { path, verdict }
     if (verdict.pass) break
+    if (attempt < MAX_QA_REGENERATIONS) heroPrompt = await repairPrompt(planner, await agentPrompt('storyboard artist', 'shot-quality-gate'), heroShot, heroPrompt, verdict.issues)
+  }
+  // Every frame is anchored to this picture; a wrong product here makes the whole film wrong.
+  if (!hero!.verdict.pass && hero!.verdict.score >= 0) {
+    await setStage(brief.id, 'frames', 'failed', `product hero still rejected ${MAX_QA_REGENERATIONS + 1} times: ${hero!.verdict.issues[0] ?? ''}`)
+    throw new Error(`The product hero still never passed the gate: ${hero!.verdict.issues.join('; ')}`)
   }
   await addAsset(brief.id, { id: 'product-hero', kind: 'image', stage: 'frames', path: hero!.path.slice(dir.length + 1), execution: 'local-dgx-spark', model: 'qwen_image_lightning', note: `gate ${hero!.verdict.score}` })
 

@@ -42,15 +42,22 @@ come back as rewrite reasons in the same loop as the validator's own.
 
 ```json
 {
-  "style": "cool backlit morning light, pastel teal and coral, shallow depth of field, fine film grain, clean commercial look",
-  "product": "a slim matte-silver aluminium can with a teal band whose label reads \"冷\" in bold white brush calligraphy",
+  "style": "<one line: light, palette, texture, mood - no numbers>",
+  "product": "<THIS brief's product: container type, material, colours, and its label text \"<brandText>\" in quotes>",
   "shots": [
-    {"shot": 1, "seconds": 5, "framing": "macro", "camera": "slow push-in",
-     "image_prompt": "Macro of the product half buried in crushed ice, condensation beading on the metal, backlit mist",
-     "video_prompt": "Slow push-in with a subtle, breath-like handheld float. Droplets slide down the metal, mist drifts. The product stays still. No people and no hands enter the frame.",
-     "on_screen_text": "冰爽一夏", "must_show": "the can upright in ice with its label readable"}
+    {"shot": 1, "seconds": 5, "framing": "<macro | close-up | medium | wide>", "camera": "<exactly one move>",
+     "image_prompt": "<subject first, action, setting, light, framing; refer to 'the product'>",
+     "video_prompt": "<what moves, one camera move, what stays still; for product-only shots end with: No people and no hands enter the frame>",
+     "on_screen_text": "<the beat's title, or empty>", "must_show": "<something visible and specific>"}
   ]
 }
+```
+
+This is a shape, not content. Every value comes from the brief and the script in front of
+you. A storyboard that describes a product other than the brief's (a can for a face cream)
+is rejected by the validator before anything is generated.
+
+```text
 ```
 
 ## Common failures
