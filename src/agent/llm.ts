@@ -96,6 +96,8 @@ export async function chat(endpoint: ModelEndpoint, options: ChatOptions): Promi
 
 export interface JsonAttempt<T> {
   value: T
+  /** Problems still present on the accepted value when every attempt was used up. Empty on a clean acceptance. */
+  unresolved: string[]
   attempts: number
   seconds: number
   completionTokens: number
@@ -110,7 +112,7 @@ export interface JsonAttempt<T> {
 export async function chatJson<T>(
   endpoint: ModelEndpoint,
   options: ChatOptions,
-  check: (value: T) => string[],
+  check: (value: T) => string[] | Promise<string[]>,
   maxAttempts = 3,
 ): Promise<JsonAttempt<T>> {
   let user = options.user
@@ -125,17 +127,19 @@ export async function chatJson<T>(
     let value: T | undefined
     try {
       value = extractJson<T>(result.content)
-      problems = check(value)
+      problems = await check(value)
     } catch (error) {
       problems = [`reply was not valid JSON: ${(error as Error).message.slice(0, 160)}`]
     }
-    if (problems.length === 0) return { value: value!, attempts: attempt, seconds, completionTokens, rejected }
+    if (problems.length === 0) return { value: value!, unresolved: [], attempts: attempt, seconds, completionTokens, rejected }
     rejected.push(problems)
     if (attempt === maxAttempts) {
-      if (value !== undefined) return { value, attempts: attempt, seconds, completionTokens, rejected }
+      if (value !== undefined) return { value, unresolved: problems, attempts: attempt, seconds, completionTokens, rejected }
       throw new Error(`${endpoint.name} did not return usable JSON after ${maxAttempts} attempts: ${problems.join('; ')}`)
     }
-    user = `${options.user}\n\nYour previous answer was rejected for these reasons:\n${problems.map((problem) => `- ${problem}`).join('\n')}\nReturn the corrected JSON only.`
+    // Send the rejected answer back with the problems, so the model edits it instead of starting over
+    // (a fresh rewrite drifted: fewer shots, new mistakes).
+    user = `${options.user}\n\nYour previous answer:\n${result.content.trim().slice(0, 6000)}\n\nIt was rejected for these reasons:\n${problems.map((problem) => `- ${problem}`).join('\n')}\nFix exactly these points, keep everything else, and return the corrected JSON only.`
   }
   throw new Error('unreachable')
 }

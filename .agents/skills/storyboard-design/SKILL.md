@@ -30,6 +30,14 @@ that belongs to the same film.
 9. `must_show` is what the quality gate checks, so write something visible and specific.
 10. If a reference breakdown exists, keep its shot count, durations, framing and camera moves; replace subject, product and scene.
 
+## Semantic checks
+
+The validator counts beats, checks languages and lengths. With `TYPESAFE_API_KEY` set,
+each shot is also judged by Jev on what a regex cannot see: does the prompt ask for
+lettering, does it pack two actions or two camera moves, does it re-describe the product,
+does it call for a hand or person the `must_show` did not ask for. Findings above p = 0.7
+come back as rewrite reasons in the same loop as the validator's own.
+
 ## Output format
 
 ```json

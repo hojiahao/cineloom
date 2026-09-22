@@ -143,7 +143,7 @@ scripts/spark-up.sh                                            # 起 Nemotron、
 
 三个服务就绪后，`cineloom harness` 和 Studio 就能用了。Harness 默认连本机的三个端口（Nemotron 8001、Step3-VL 8002、ComfyUI 8188），可用环境变量改：`CINELOOM_PLANNER_URL`、`CINELOOM_VISION_URL`、`COMFYUI_URL`。配置了 `STEPFUN_API_KEY` 时，文字审稿改由 StepFun 开放平台的 Step-3.7-Flash 承担，并在记录里标注 `cloud`；不配置则全程本地。
 
-**本地是默认，云端是可选。** 视频生成是本机的耗时瓶颈（14B 模型约 6 分钟一段）。设置 `ARK_API_KEY` 后，`--video-model seedance`（Studio 里同名选项）把生视频交给火山方舟的 Seedance 系列，首帧会离开本机，因此该素材在记录和看板里标为 `cloud`；设置 `STEPFUN_API_KEY` 则由 Step-3.7-Flash 承担审稿。两条云端路线都不影响默认的全本地流程。Seedance 路线的协议已用假服务测试通过（`tests/cloudvideo.test.ts`），尚未对真实服务验证。仓库里不含任何密钥。
+**本地是默认，云端是可选。** 三条可选云端路线：视频（Seedance）、审稿（Step-3.7-Flash）、结构化评估（Jev）。 视频生成是本机的耗时瓶颈（14B 模型约 6 分钟一段）。设置 `ARK_API_KEY` 后，`--video-model seedance`（Studio 里同名选项）把生视频交给火山方舟的 Seedance 系列，首帧会离开本机，因此该素材在记录和看板里标为 `cloud`；设置 `STEPFUN_API_KEY` 则由 Step-3.7-Flash 承担审稿。两条云端路线都不影响默认的全本地流程。Seedance 路线的协议已用假服务测试通过（`tests/cloudvideo.test.ts`），尚未对真实服务验证。仓库里不含任何密钥。
 
 这台机器上踩过的坑都已写进配置：Docker 通过 CDI（`nvidia.com/gpu=all`）而不是 `runtime: nvidia` 暴露 GPU；Step3-VL 的 FP8 权重要设 `VLLM_USE_DEEP_GEMM=0`；ComfyUI 镜像直接建在 vLLM 镜像上，复用已在 GB10 上验证过的 PyTorch。
 
@@ -159,6 +159,7 @@ scripts/spark-up.sh                                            # 起 Nemotron、
 | 14B 视频模型 + 4 步蒸馏 | Wan2.2 I2V A14B（FP8，高噪/低噪两个专家）+ lightx2v 4-step LoRA | 实测 353 秒一段，不比 5B 模型（365 秒）慢，画面明显更好，因此设为默认 |
 | 按任务开关思考 | 脚本、分镜、审稿关闭 Nemotron 的思考模式 | 开着时会把整个 token 额度用在推理上、正文为空；关掉后 0.3 秒出结构化结果，由校验器和重试兜底 |
 | 原生分辨率预算 | 超过 1328×1328 像素总量的请求先按预算生成再放大 | 扩散耗时随像素数增长，预算内生成、Lanczos 放大 |
+| 校准概率做分流 | 可选：Jev 对每句文案和每个镜头回答类型化问题（绝对化用语、健康功效、品类语感、是否要求画字、一镜多动作…），p ≥ 0.7 直接退回重写，0.3–0.7 交审稿智能体裁决 | 自由文本 JSON 的“分数”不校准（本地视觉模型几乎只给 30/40/90 三档）；类型化答案能设阈值，也不会出现“思考完没额度写结论”的故障。实测每句 1.6 s |
 | 分阶段显存调度 | vLLM 按总内存池比例预占（0.25 + 0.20）；Harness 在定妆图、首帧、视频三个阶段切换时调用 ComfyUI `/free` | 三个扩散模型同时留在内存里会让 GPU 驱动分配失败（实测发生过），一次只留一族 |
 
 **本机实测（2026-09-21，DGX Spark，单请求）**
@@ -256,6 +257,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | ComfyUI · Wan2.2 TI2V-5B | 备选视频模型，支持无首帧的文生视频 |
 | ffmpeg · libass | 参考片切镜、尾帧续接；成片的转场、调色、颗粒、暗角、真字体标题字幕与混音 |
 | Kokoro-82M-v1.1-zh | 离线中文配音 |
+| [Jev](https://docs.typesafe.ai/)（TypeSafe，云端 API，可选） | 结构化评估：对文案和分镜提出类型化问题，返回校准概率；`TYPESAFE_API_KEY` 存在时启用，只发送文本，记录标为 `cloud` |
 | ComfyUI · ACE-Step v1 3.5B | 本地生成器乐背景音乐 |
 | TypeScript · Node.js 22 · Vitest | CineLoom Harness、CLI、Studio 与测试（零运行时依赖） |
 | [archify](https://github.com/tt-a1i/archify) | 架构图 |

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync, readFileSync } from 'node:fs'
 import { COMMANDS } from './commands/index.js'
 import { parseArgs, UsageError } from './lib/args.js'
 
@@ -23,6 +24,15 @@ const HELP = `CineLoom - agentic ad-film studio for a single DGX Spark
   cineloom doctor
   cineloom studio [--port 3090] [--host 127.0.0.1]
 `
+
+// Optional API keys for cloud routes live outside the repo (runtime-data/ is git-ignored).
+const keysFile = process.env.CINELOOM_KEYS_FILE ?? 'runtime-data/keys.env'
+if (existsSync(keysFile)) {
+  for (const line of readFileSync(keysFile, 'utf8').split('\n')) {
+    const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line)
+    if (match && !(match[1]! in process.env)) process.env[match[1]!] = match[2]!.replace(/^["']|["']$/g, '')
+  }
+}
 
 const [name, ...rest] = process.argv.slice(2)
 const command = name ? COMMANDS[name] : undefined

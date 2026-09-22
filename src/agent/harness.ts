@@ -9,6 +9,7 @@ import { addAsset, createProject, projectDir, setStage, type Stage } from '../li
 import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
 import { enterPhase, finishFilm } from './finish.js'
 import { qualityGate, type QaVerdict } from './gate.js'
+import { jevConfig, judgeCopy, judgeStoryboard } from './jev.js'
 import { chatJson, endpoints, type ModelEndpoint } from './llm.js'
 import { agentSystem, scriptUser, storyboardUser } from './prompts.js'
 import { loadRules, loadSkill } from './skills.js'
@@ -86,6 +87,8 @@ Return JSON only:
   rejectedAttempts.brief = briefRun.rejected.length
   await createProject({ id: brief.id, title: brief.title, brief: options.brief, ratio: brief.ratio, durationSeconds: brief.durationSeconds })
   const dir = projectDir(brief.id)
+  const jev = jevConfig()
+  let jevReview: Array<{ beat: number; line: string; issue: string; probability: number }> = []
   const record = async (stage: Stage | 'run', agent: string, endpoint: ModelEndpoint | undefined, detail: Record<string, unknown>) =>
     appendFile(
       join(dir, 'reports', 'run.jsonl'),
@@ -107,8 +110,22 @@ Return JSON only:
       temperature: 0.8,
       user: scriptUser(brief),
     },
-    (script) => checkScript(script, brief),
+    async (script) => {
+      const problems = checkScript(script, brief)
+      // Structured judge (optional, cloud): semantic problems the regex scan cannot see, at a
+      // calibrated threshold. Certain findings go straight back to the copywriter as rewrite reasons.
+      if (problems.length === 0 && jev) {
+        const judged = await judgeCopy(jev, brief, script)
+        await record('script', 'jev', undefined, { execution: 'cloud', model: judged.model, seconds: judged.seconds, inputTokens: judged.inputTokens, findings: judged.findings })
+        problems.push(...judged.findings.filter((f) => f.severity === 'block').map((f) => `beat ${f.beat} "${f.line}": ${f.issue} (p=${f.probability.toFixed(2)})`))
+        jevReview = judged.findings.filter((f) => f.severity === 'review')
+      }
+      return problems
+    },
+    4,
   )
+  failIfHardProblems('script', checkScript(scriptRun.value, brief), scriptRun.attempts)
+  if (scriptRun.unresolved.length) log(`  script accepted with ${scriptRun.unresolved.length} unresolved semantic finding(s) after ${scriptRun.attempts} attempts`)
   let script = scriptRun.value
   rejectedAttempts.script = scriptRun.rejected.length
   await record('script', 'copywriter', planner, { seconds: scriptRun.seconds, attempts: scriptRun.attempts, rejected: scriptRun.rejected })
@@ -127,7 +144,7 @@ Return JSON only:
       user: `Product category: ${brief.category}. Proof points the brand can substantiate: none supplied.
 Script copy:\n${script.beats.map((beat) => `Beat ${beat.beat} VO: ${beat.vo}\nBeat ${beat.beat} text: ${beat.text}`).join('\n')}
 
-Judge two things only, briefly: (1) wording a keyword scan would miss - implied superlatives, implied comparison with competitors, effects nobody could prove; (2) Chinese that sounds unnatural when read aloud.
+${jevReview.length ? `A structured judge flagged these lines as uncertain; decide each one:\n${jevReview.map((f) => `- beat ${f.beat} "${f.line}": ${f.issue} (p=${f.probability.toFixed(2)})`).join('\n')}\n\n` : ''}Judge two things only, briefly: (1) wording a keyword scan would miss - implied superlatives, implied comparison with competitors, effects nobody could prove; (2) Chinese that sounds unnatural when read aloud.
 Line lengths are checked elsewhere; do not count characters. Return JSON only:
 {"approve": true|false, "issues": ["..."], "revised": [{"beat": 1, "vo": "...", "text": "..."}]}  ("revised" only for lines you would change)`,
     },
@@ -163,9 +180,21 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   const storyboardUserPrompt = storyboardUser(brief, script)
   const storyboardRun = await chatJson<Storyboard>(
     planner,
-    { system: await agentPrompt('storyboard artist', 'storyboard-design'), thinking: false, maxTokens: 5000, temperature: 0.6, user: storyboardUserPrompt },
-    (storyboard) => checkStoryboard(storyboard, script),
+    { system: await agentPrompt('storyboard artist', 'storyboard-design'), thinking: false, maxTokens: 5000, temperature: 0.4, user: storyboardUserPrompt },
+    async (storyboard) => {
+      const problems = checkStoryboard(storyboard, script)
+      if (problems.length === 0 && jev) {
+        const judged = await judgeStoryboard(jev, storyboard)
+        await record('storyboard', 'jev', undefined, { execution: 'cloud', model: judged.model, seconds: judged.seconds, inputTokens: judged.inputTokens, problems: judged.problems, notes: judged.notes })
+        for (const note of judged.notes) log(`  note: ${note}`)
+        problems.push(...judged.problems)
+      }
+      return problems
+    },
+    4,
   )
+  failIfHardProblems('storyboard', checkStoryboard(storyboardRun.value, script), storyboardRun.attempts)
+  if (storyboardRun.unresolved.length) log(`  storyboard accepted with ${storyboardRun.unresolved.length} unresolved semantic finding(s) after ${storyboardRun.attempts} attempts`)
   const storyboard = storyboardRun.value
   rejectedAttempts.storyboard = storyboardRun.rejected.length
   await writeFile(join(dir, 'storyboard', 'storyboard.json'), JSON.stringify(storyboard, null, 2))
@@ -275,6 +304,11 @@ Return JSON only: {"image_prompt": "..."}`,
     2,
   )
   return run.value.image_prompt
+}
+
+/** A hard validator problem that survived every attempt would break the film (wrong beat count, restricted wording, Chinese in an image prompt): stop here, truthfully. */
+function failIfHardProblems(stage: string, problems: string[], attempts: number): void {
+  if (problems.length) throw new Error(`${stage} still fails its checks after ${attempts} attempts: ${problems.join('; ')}`)
 }
 
 /** Aspect ratio and duration stated in plain words in the request itself. */

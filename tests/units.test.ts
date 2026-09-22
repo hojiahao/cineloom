@@ -157,3 +157,10 @@ describe('stated format wins over the intake agent', () => {
     expect(statedFormat('一条广告')).toEqual({ ratio: undefined, durationSeconds: undefined })
   })
 })
+
+describe('lenient JSON extraction', () => {
+  it('repairs trailing commas and typographic quotes', () => {
+    expect(extractJson('{"a": [1, 2,], "b": {"c": 1,},}')).toEqual({ a: [1, 2], b: { c: 1 } })
+    expect(extractJson('{“k”: “v”}')).toEqual({ k: 'v' })
+  })
+})

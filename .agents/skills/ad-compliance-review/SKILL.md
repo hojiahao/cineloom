@@ -30,6 +30,18 @@ phrase caught late costs a full regeneration. Review text before media.
 4. Review what a wording scan cannot see: implied superlatives and comparisons with competitors, body or health effects claimed for food and drink ("提神醒脑", "解暑降火"), efficacy claims on cosmetics, statistics without a stated source, and register borrowed from another category (skincare vocabulary on a soda). The reviewer must not be the agent that wrote the copy; in CineLoom Harness it is a separate agent with this skill and a different system prompt.
 5. Rewrite every `block` finding - keep the selling point, drop the restricted form - and rescan until the exit code is 0. Resolve `review` findings with proof from the brief, or rewrite them too.
 
+## Structured judge (optional)
+
+When `TYPESAFE_API_KEY` is set, each beat is also put to Jev, a structured evaluation
+model that returns calibrated probabilities instead of prose: absolute or superlative
+claim, bodily or health effect, vocabulary register versus the product category, and how
+natural the line sounds read aloud. The harness routes on the numbers: p >= 0.7 goes
+straight back to the copywriter as a rewrite reason, 0.3-0.7 is handed to the reviewer
+agent to decide, below 0.3 passes. Measured on this project's own lines: "全网第一…永不发胖"
+0.99, "提神醒脑" as a health effect 0.95, skincare vocabulary on a soda 0.95, clean lines
+under 0.1; about 1.6 s and 600 tokens per beat. Text leaves the machine, so the record
+marks it `cloud`; it never sees images or product material, only the copy.
+
 ## Severity
 
 - `block`: wording the rules prohibit outright. The copy must not go downstream.
