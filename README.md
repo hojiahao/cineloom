@@ -59,6 +59,7 @@
 ### 案例一 · 饮料：无糖气泡水“冷”（15 秒竖版广告）
 
 <!-- video:soda-9x16 · 在此行下方粘贴 GitHub 生成的视频链接（单独一行），即渲染为播放器；海报图随之删除 -->
+https://github.com/user-attachments/assets/6b3847eb-c4db-4458-b654-bbe4ec3ef857
 <p align="center"><img src="docs/showcase/soda-poster.jpg" alt="无糖气泡水“冷”成片首帧" width="300"></p>
 
 <p align="center"><sub>成片规格：1080×1920 · 24 fps · 实际时长 16.8 秒（含 3 秒结尾定版）· 配音与音乐均为本地生成 · 制作总耗时 2256 秒 · 质检重生成 1 次</sub></p>
@@ -86,6 +87,7 @@
 ### 案例二 · 数码：机械键盘“青”（15 秒横版广告）
 
 <!-- video:keyboard-16x9 · 在此行下方粘贴 GitHub 生成的视频链接（单独一行），即渲染为播放器；海报图随之删除 -->
+https://github.com/user-attachments/assets/417796a8-5f80-495c-9ec8-72c4bf01da8b
 <p align="center"><img src="docs/showcase/keyboard-poster.jpg" alt="机械键盘“青”成片首帧" width="640"></p>
 
 <p align="center"><sub>成片规格：1920×1080 · 24 fps · 实际时长 16.8 秒（含 3 秒结尾定版）· 配音与音乐均为本地生成 · 制作总耗时 2682 秒 · 质检重生成 2 次</sub></p>
