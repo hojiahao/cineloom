@@ -196,3 +196,18 @@ describe('voiceover language', () => {
     expect(problems[0]).toMatch(/mixes an English word/)
   })
 })
+
+describe('title matches the product form', () => {
+  const beats = (text: string) => [{ beat: 1, job: 'hook', see: 'x', vo: '清晨光落，咖啡香起', text }, { beat: 2, job: 'proof', see: 'y', vo: '一袋挂耳，随手冲泡', text: '随泡' }, { beat: 3, job: 'payoff', see: 'z', vo: '温热入喉，清晨唤醒', text: '唤醒' }]
+  const brief = (product: string) => ({ id: 'c', title: 't', product, category: 'food', audience: 'a', message: 'm', ratio: '16:9', durationSeconds: 15, tone: 'warm', brandText: '醒' } as Brief)
+  it('rejects a can title on a drip-bag coffee, the example copied from the skill', () => {
+    const problems = checkScript({ structure: 's', beats: beats('开罐') }, brief('挂耳咖啡'))
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/container/)
+  })
+  it('accepts a can title on a drink, whose can the brief need not mention', () => {
+    expect(checkScript({ structure: 's', beats: beats('开罐') }, brief('sugar-free sparkling water'))).toEqual([])
+    expect(checkScript({ structure: 's', beats: beats('开罐') }, brief('罐装咖啡'))).toEqual([])
+    expect(checkScript({ structure: 's', beats: beats('晨光') }, brief('挂耳咖啡'))).toEqual([])
+  })
+})

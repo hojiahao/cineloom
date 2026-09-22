@@ -35,7 +35,7 @@ three seconds and spend the rest proving it.
 ```json
 {"structure": "sensory close-ups -> reveal",
  "beats": [
-  {"beat": 1, "job": "hook",   "see": "ice cracking around the can, backlit", "vo": "冰块轻响，夏天就此开罐", "text": "开罐"},
+  {"beat": 1, "job": "hook",   "see": "<one subject, one action, in English>", "vo": "<8-18 个汉字>", "text": "<≤8 个汉字的标题>"},
   {"beat": 2, "job": "proof",  "see": "...", "vo": "...", "text": "..."},
   {"beat": 3, "job": "payoff", "see": "...", "vo": "...", "text": "..."}
  ]}
@@ -52,4 +52,5 @@ three seconds and spend the rest proving it.
 - The film ends on an end card with the brand and the single message, so the last beat should hand over to it rather than repeat it.
 - Voiceover sounds like a person talking, not a slogan list. Read it aloud once.
 - Voiceover is Chinese only; a stray English word ("唤醒 mornings") is a defect and is rejected. Only the brand text may be non-Chinese.
+- Titles name this product's own moment. "开罐" was written for a drip-bag coffee once, copied from an example about a can; a title that mentions a container the product does not have (罐/瓶) is rejected.
 - The voiceover talks about the experience, never about the packaging: "黑色衬线，牛皮纸质感" describes the label's typography and was accepted once by every check - it reads as a product spec, not an ad. Leave the look of the product to the storyboard.

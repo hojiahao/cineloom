@@ -54,6 +54,10 @@ export const VO_MAX_CHARS = 18
 export const VO_MIN_CHARS = 8
 export const TEXT_MAX_CHARS = 8
 const CJK = /[一-鿿]/
+// Container words that only make sense for a specific product form.
+const CONTAINER_WORDS = ['罐', '瓶']
+// Drinks may come in a can or a bottle even when the brief does not say so; a drip-bag coffee or a face cream does not.
+const CANNED_DRINK = /\bcans?\b|bottle|水|饮|汽|气泡|啤酒|可乐|茶|juice|soda|water|drink|beverage|beer|cola|tea/i
 
 // Everything a caption may contain: CJK, Latin letters, digits and ordinary punctuation. Anything else
 // (emoji, replacement characters, stray symbols, other scripts) is how garbage reaches the screen.
@@ -103,6 +107,10 @@ export function checkScript(script: Script, brief: Brief): string[] {
     }
     problems.push(...captionProblems(`${label} voiceover`, beat.vo ?? '', false), ...captionProblems(`${label} on-screen text`, beat.text ?? '', true))
     if (spokenLength(beat.text ?? '') > TEXT_MAX_CHARS) problems.push(`${label}: on-screen text has ${spokenLength(beat.text)} characters; at most ${TEXT_MAX_CHARS}`)
+    // "开罐" on a drip-bag coffee: the title of the skill's example was copied onto a product that has no can.
+    const productText = `${brief.product} ${brief.message} ${brief.title}`
+    for (const word of CONTAINER_WORDS) if ((beat.text ?? '').includes(word) && !productText.includes(word) && !CANNED_DRINK.test(productText))
+      problems.push(`${label}: "${beat.text}" talks about a container (${word}) that this product does not have (${brief.product}); write a title about this product`)
   }
   const copy = beats.map((beat) => `${beat.vo}\n${beat.text ?? ''}`).join('\n')
   for (const finding of scanCopy(copy, brief.category).filter((item) => item.severity === 'block'))

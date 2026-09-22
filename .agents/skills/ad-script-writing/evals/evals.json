@@ -12,5 +12,12 @@
     "expected_skill": "ad-script-writing",
     "expected_script": null,
     "ground_truth": "The agent explains that clips are generated in 5 s segments so a 15 s film has three beats, and proposes either three beats or a longer duration instead of writing eight beats."
+  },
+  {
+    "id": "ad-script-writing-eval-003-title-matches-product-form",
+    "question": "brief 已确认：挂耳咖啡「醒」，15 秒横版，受众是上班族，核心信息是“清晨一口”。写脚本。",
+    "expected_skill": "ad-script-writing",
+    "expected_script": null,
+    "ground_truth": "Every title and voiceover line refers to a drip bag or a cup, never to a can, bottle or opening a can; the see lines are in English only; the voiceover contains no English word and never describes the packaging's printing; the film ends on the product in a cup."
   }
 ]
