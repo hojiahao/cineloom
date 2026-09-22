@@ -241,7 +241,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
     })
     log(`▸ clip ${shot.shot}       ${clip.seconds.toFixed(1)}s`)
     await record('clips', 'video', undefined, { shot: shot.shot, seconds: clip.seconds })
-    await addAsset(brief.id, { id: `clip-${shot.shot}`, kind: 'video', stage: 'clips', path: `clips/shot_${String(shot.shot).padStart(3, '0')}.mp4`, shot: shot.shot, execution: 'local-dgx-spark', model: clip.workflow, seconds: clip.seconds })
+    await addAsset(brief.id, { id: `clip-${shot.shot}`, kind: 'video', stage: 'clips', path: `clips/shot_${String(shot.shot).padStart(3, '0')}.mp4`, shot: shot.shot, execution: clip.workflow.startsWith('cloud:') ? 'cloud' : 'local-dgx-spark', model: clip.workflow, seconds: clip.seconds })
   }
   await setStage(brief.id, 'clips', 'done')
 

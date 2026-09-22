@@ -2,14 +2,15 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { ComfyClient } from '../comfy/client.js'
 import { loadWorkflow, renderWorkflow } from '../comfy/workflow.js'
+import { cloudVideoConfig, generateCloudVideo } from './cloudvideo.js'
 import { concatCopy, extractLastFrame, scaleImage } from './ffmpeg.js'
 
 export const IMAGE_NATIVE_MAX_PIXELS = Number(process.env.CINELOOM_IMAGE_NATIVE_MAX_PIXELS ?? 1328 * 1328)
 export const VIDEO_FPS = 24
 
-export type VideoModel = 'wan22-5b' | 'wan22-14b'
+export type VideoModel = 'wan22-5b' | 'wan22-14b' | 'seedance'
 /** The 14B image-to-video model runs at its native 16 fps and needs a first frame. */
-const VIDEO_MODELS: Record<VideoModel, { fps: number; i2v: string; t2v?: string }> = {
+const VIDEO_MODELS: Record<Exclude<VideoModel, 'seedance'>, { fps: number; i2v: string; t2v?: string }> = {
   'wan22-5b': { fps: 24, i2v: 'wan22_ti2v_5b_i2v', t2v: 'wan22_ti2v_5b_t2v' },
   'wan22-14b': { fps: 16, i2v: 'wan22_i2v_14b_4step' },
 }
@@ -26,6 +27,7 @@ const VIDEO_SIZES: Record<string, [number, number]> = {
 
 export interface MediaResult {
   path: string
+  /** ComfyUI template name, or `cloud:<model>` for the opt-in cloud video route. */
   workflow: string
   seconds: number
   width: number
@@ -103,7 +105,16 @@ export async function generateVideo(
 ): Promise<MediaResult> {
   const started = Date.now()
   const modelName = request.model ?? (process.env.CINELOOM_VIDEO_MODEL as VideoModel | undefined) ?? 'wan22-5b'
-  const model = VIDEO_MODELS[modelName]
+  if (modelName === 'seedance') {
+    // Opt-in cloud route. The first frame leaves the machine, so callers record this asset as cloud.
+    const config = cloudVideoConfig()
+    if (!config) throw new Error('The seedance route needs ARK_API_KEY (and optionally ARK_VIDEO_ENDPOINT / ARK_VIDEO_MODEL).')
+    if (!request.firstFrame) throw new Error('The seedance route is image-to-video here; pass a first frame.')
+    const [width, height] = videoSize(request.resolution, request.ratio)
+    const cloud = await generateCloudVideo(config, { prompt: request.prompt, firstFrame: request.firstFrame, output: request.output, ratio: request.ratio, resolution: request.resolution, durationSeconds: request.durationSeconds })
+    return { path: request.output, workflow: `cloud:${config.model}`, seconds: cloud.seconds, width, height, detail: { model: 'seedance', execution: 'cloud', taskId: cloud.taskId, durationSeconds: request.durationSeconds } }
+  }
+  const model = VIDEO_MODELS[modelName as Exclude<VideoModel, 'seedance'>]
   if (!model) throw new Error(`Unknown video model ${modelName}; use wan22-5b or wan22-14b.`)
   if (!model.t2v && !request.firstFrame) throw new Error(`${modelName} is image-to-video only; pass a first frame.`)
   const [width, height] = videoSize(request.resolution, request.ratio)

@@ -90,7 +90,7 @@ async function video(args: ParsedArgs): Promise<number> {
   if (id) {
     await addAsset(id, {
       id: `clip-${shot ?? Date.now()}`, kind: 'video', stage: 'clips', path: projectRelative(id, output),
-      shot: shot ? Number(shot) : undefined, execution: 'local-dgx-spark', model: result.workflow, seconds: result.seconds,
+      shot: shot ? Number(shot) : undefined, execution: result.workflow.startsWith('cloud:') ? 'cloud' : 'local-dgx-spark', model: result.workflow, seconds: result.seconds,
     })
   }
   print(result)

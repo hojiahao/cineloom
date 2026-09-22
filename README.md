@@ -124,6 +124,8 @@ scripts/spark-up.sh                                            # 起 Nemotron、
 
 三个服务就绪后，`cineloom harness` 和 Studio 就能用了。Harness 默认连本机的三个端口（Nemotron 8001、Step3-VL 8002、ComfyUI 8188），可用环境变量改：`CINELOOM_PLANNER_URL`、`CINELOOM_VISION_URL`、`COMFYUI_URL`。配置了 `STEPFUN_API_KEY` 时，文字审稿改由 StepFun 开放平台的 Step-3.7-Flash 承担，并在记录里标注 `cloud`；不配置则全程本地。
 
+**本地是默认，云端是可选。** 视频生成是本机的耗时瓶颈（14B 模型约 6 分钟一段）。设置 `ARK_API_KEY` 后，`--video-model seedance`（Studio 里同名选项）把生视频交给火山方舟的 Seedance 系列，首帧会离开本机，因此该素材在记录和看板里标为 `cloud`；设置 `STEPFUN_API_KEY` 则由 Step-3.7-Flash 承担审稿。两条云端路线都不影响默认的全本地流程。Seedance 路线的协议已用假服务测试通过（`tests/cloudvideo.test.ts`），尚未对真实服务验证。仓库里不含任何密钥。
+
 这台机器上踩过的坑都已写进配置：Docker 通过 CDI（`nvidia.com/gpu=all`）而不是 `runtime: nvidia` 暴露 GPU；Step3-VL 的 FP8 权重要设 `VLLM_USE_DEEP_GEMM=0`；ComfyUI 镜像直接建在 vLLM 镜像上，复用已在 GB10 上验证过的 PyTorch。
 
 ### 2. 如何优化大模型
