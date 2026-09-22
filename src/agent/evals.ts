@@ -85,13 +85,15 @@ export async function runAblation(briefsPath: string, output: string, repeats: n
   }
   const summarise = (pick: (row: (typeof rows)[number]) => ArmResult) => {
     const arms = rows.map(pick)
+    // A storyboard that was never attempted (no usable script) is not scored, here or in the BENCHMARK reports.
+    const boards = arms.filter((arm) => !arm.storyboardProblems.some((problem) => problem.startsWith('skipped')))
     const mean = (values: number[]) => Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 100) / 100
     return {
       runs: arms.length,
       scriptCleanFirstTry: `${arms.filter((arm) => arm.scriptViolations === 0).length}/${arms.length}`,
-      storyboardCleanFirstTry: `${arms.filter((arm) => arm.storyboardViolations === 0).length}/${arms.length}`,
+      storyboardCleanFirstTry: `${boards.filter((arm) => arm.storyboardViolations === 0).length}/${boards.length}`,
       meanScriptViolations: mean(arms.map((arm) => arm.scriptViolations)),
-      meanStoryboardViolations: mean(arms.map((arm) => arm.storyboardViolations)),
+      meanStoryboardViolations: mean(boards.map((arm) => arm.storyboardViolations)),
       meanSeconds: mean(arms.map((arm) => arm.seconds)),
     }
   }

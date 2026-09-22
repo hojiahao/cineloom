@@ -7,9 +7,9 @@
   "withSkills": {
     "runs": 16,
     "scriptCleanFirstTry": "6/16",
-    "storyboardCleanFirstTry": "8/16",
+    "storyboardCleanFirstTry": "8/14",
     "meanScriptViolations": 1.06,
-    "meanStoryboardViolations": 0.75,
+    "meanStoryboardViolations": 0.71,
     "meanSeconds": 15.51
   },
   "withoutSkills": {
