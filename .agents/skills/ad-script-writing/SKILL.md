@@ -26,7 +26,7 @@ three seconds and spend the rest proving it.
    - One scene, one line (brand moments)
 3. Divide the duration into 5-second beats - one beat becomes one generated clip. A 15 s ad has three beats; do not write more.
 4. For each beat write: what we see (one subject, one action), voiceover, on-screen text, and the beat's job (hook, proof, payoff, call to action).
-5. Budget words: Mandarin voiceover reads at about 4 characters per second. Write 10-18 characters per 5 s beat and count them. Over 18 cannot be read in time; under 8 leaves most of the beat silent - a model asked only for a maximum tends to answer with four characters.
+5. Budget words: Mandarin voiceover reads at about 4 characters per second. Write 10-18 characters per 5 s beat and count them (punctuation does not count). Over 18 cannot be read in time; under 8 leaves most of the beat silent - a model asked only for a maximum tends to answer with four characters.
 6. On-screen text is a title of at most 8 characters per beat. It is typeset in post-production in a real font, never drawn by the image model, so write exactly what should appear: Chinese characters, digits and ordinary full-width punctuation only - no emoji, no symbols, no doubled marks, and no closing punctuation on a title.
 7. Write `projects/<id>/script/script.json`, then hand the copy to `ad-compliance-review` before anything is generated.
 

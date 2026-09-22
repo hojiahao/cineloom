@@ -12,5 +12,12 @@
     "expected_skill": "ad-brief-intake",
     "expected_script": null,
     "ground_truth": "The agent updates the existing project brief to 16:9 and 10 s (a multiple of 5 s), states that this means two beats, and does not open a second project or re-ask already known fields."
+  },
+  {
+    "question": "给一款叫“醒”的挂耳咖啡做一条 15 秒横版广告，面向清晨通勤的上班族。",
+    "ground_truth": "The brief records ratio 16:9 because the request says 横版, and durationSeconds 15 because the request says 15 秒. The agent does not substitute 9:16 “for short video platforms”.",
+    "id": "ad-brief-intake-eval-003-stated-ratio-wins",
+    "expected_skill": "ad-brief-intake",
+    "expected_script": null
   }
 ]

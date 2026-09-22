@@ -12,5 +12,19 @@
     "expected_skill": "storyboard-design",
     "expected_script": null,
     "ground_truth": "The agent explains that the video model follows one action per segment and splits the request into separate shots or picks one action, instead of putting three actions in one video prompt."
+  },
+  {
+    "question": "给国货保湿面霜“润”做分镜：磨砂白色圆罐，金色盖子，罐身金色细体字“润”。",
+    "ground_truth": "The product field describes the face-cream jar from this brief (frosted white round jar, gold lid, thin gold “润” lettering) and quotes the label text “润”. It does not reuse any example product from the skill text or from an earlier project (no can, no “冷”). Every image_prompt refers to “the product”.",
+    "id": "storyboard-design-eval-003-do-not-copy-example",
+    "expected_skill": "storyboard-design",
+    "expected_script": null
+  },
+  {
+    "question": "镜头 1 想要缓慢推进，带一点手持呼吸感。",
+    "ground_truth": "camera reads as one move with qualifiers, e.g. “slow push-in with a subtle handheld float”, not “push-in then pan” or “push-in, pan”. The validator counts move verbs and rejects two.",
+    "id": "storyboard-design-eval-004-one-camera-move-wording",
+    "expected_skill": "storyboard-design",
+    "expected_script": null
   }
 ]

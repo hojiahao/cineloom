@@ -18,7 +18,7 @@ then open the project so every later stage has one source of truth.
 
 ## Workflow
 
-1. Extract what the request already states. Do not ask for it again.
+1. Extract what the request already states and keep it verbatim: an aspect ratio (横版 = 16:9, 竖版 = 9:16, 方形 = 1:1) or a duration written in the request is not yours to change. A coffee brief that said 横版 once came back as 9:16; the harness now overrides the agent with the stated values, but do not make it necessary.
 2. Resolve the blocking unknowns, in this order, in one message: the product (and whether
    reference photos exist), the audience, the single message the viewer should remember.
 3. Decide the rest yourself and say what you chose: platform, aspect ratio (9:16 for feed
