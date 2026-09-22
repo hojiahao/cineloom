@@ -177,3 +177,12 @@ describe('storyboard must describe this brief\'s product', () => {
     expect(checkStoryboard({ style, product: 'a frosted white glass jar with a gold lid whose label reads "润"', shots: [shot] }, script, { brandText: '润', product: 'moisturising face cream' })).toEqual([])
   })
 })
+
+describe('product-consistency heuristic', () => {
+  it('flags a can for a face cream but not an aluminium keyboard', () => {
+    const script1 = { structure: 's', beats: [{ beat: 1, job: 'hook', see: 'x', vo: '晨光里，咖啡香已醒来', text: '醒' }] }
+    const shot = { shot: 1, seconds: 5, framing: 'macro', camera: 'push-in', image_prompt: 'Macro of the product', video_prompt: 'Push-in.', on_screen_text: '', must_show: 'the product' }
+    expect(checkStoryboard({ style: 's', product: 'a deep grey aluminium mechanical keyboard with a "青" plate', shots: [shot] }, script1, { brandText: '青', product: 'mechanical keyboard' })).toEqual([])
+    expect(checkStoryboard({ style: 's', product: 'a slim aluminium can with a teal band that reads "润"', shots: [shot] }, script1, { brandText: '润', product: 'face cream' })).toHaveLength(1)
+  })
+})

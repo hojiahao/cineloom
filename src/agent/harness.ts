@@ -122,7 +122,7 @@ Return JSON only:
       }
       return problems
     },
-    4,
+    6,
   )
   failIfHardProblems('script', checkScript(scriptRun.value, brief), scriptRun.attempts)
   if (scriptRun.unresolved.length) log(`  script accepted with ${scriptRun.unresolved.length} unresolved semantic finding(s) after ${scriptRun.attempts} attempts`)
@@ -191,7 +191,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
       }
       return problems
     },
-    4,
+    6,
   )
   failIfHardProblems('storyboard', checkStoryboard(storyboardRun.value, script, brief), storyboardRun.attempts)
   if (storyboardRun.unresolved.length) log(`  storyboard accepted with ${storyboardRun.unresolved.length} unresolved semantic finding(s) after ${storyboardRun.attempts} attempts`)
