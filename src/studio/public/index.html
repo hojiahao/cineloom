@@ -25,6 +25,8 @@
   .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px }
   figure { margin:0; background:#101116; border:1px solid var(--line); border-radius:9px; overflow:hidden }
   figure img, figure video { display:block; width:100%; aspect-ratio:9/12; object-fit:cover; background:#000 }
+  .grid.wide { grid-template-columns:repeat(auto-fill,minmax(300px,1fr)) } .grid.wide figure img, .grid.wide figure video { aspect-ratio:16/9 }
+  .grid.square figure img, .grid.square figure video { aspect-ratio:1/1 }
   figcaption { padding:8px 10px; font-size:12.5px; color:var(--dim) }
   figcaption b { color:var(--text); font-weight:500 }
   .tag { display:inline-block; padding:0 6px; border-radius:4px; font-size:11px; border:1px solid #2e5b45; color:var(--ok) }
@@ -46,7 +48,6 @@
 <body>
 <header>
   <h1>Cine<span>Loom</span></h1><div class="sub">影织 · CineLoom Harness 工作台</div>
-  <input id="token" type="password" placeholder="访问令牌（可选）" style="font:inherit;background:#101116;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;width:150px" title="服务端设置了 CINELOOM_STUDIO_TOKEN 时需要">
   <div class="mem"><span id="memText">统一内存 …</span><div class="bar"><i id="memBar" style="width:0"></i></div></div>
 </header>
 <main>
@@ -82,7 +83,7 @@ function render(projects) {
     const final = project.assets.find((asset) => asset.id === 'final-cut')
     const shots = project.assets.filter((asset) => asset.id !== 'final-cut' && asset.kind !== 'document').sort((a, b) => (a.shot ?? 0) - (b.shot ?? 0) || a.kind.localeCompare(b.kind))
     return `<section class="project"><h2>${esc(project.title)}</h2><p class="brief">${esc(project.brief)} · ${esc(project.ratio)} · ${project.durationSeconds}s</p>
-      <div class="stages">${stages}</div><div class="grid">${shots.map((asset) => assetCard(project, asset)).join('')}</div>
+      <div class="stages">${stages}</div><div class="grid ${project.ratio === '16:9' ? 'wide' : project.ratio === '1:1' ? 'square' : ''}">${shots.map((asset) => assetCard(project, asset)).join('')}</div>
       ${final ? `<div class="final"><h3>成片</h3><video src="${fileUrl(project.id, final.path)}" controls></video><p><a href="${fileUrl(project.id, 'reports/delivery.md')}" target="_blank">交付报告</a> · <a href="${fileUrl(project.id, 'script/script.json')}" target="_blank">脚本</a> · <a href="${fileUrl(project.id, 'storyboard/storyboard.json')}" target="_blank">分镜</a> · <a href="${fileUrl(project.id, 'reports/run.jsonl')}" target="_blank">运行记录</a></p></div>` : ''}</section>`
   }).join('')
 }
@@ -99,13 +100,12 @@ async function refreshJob() {
   const html = `<pre class="joblog">${lines}${tail}</pre>`
   if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; box.firstChild.scrollTop = 1e6 }
 }
-try { document.getElementById('token').value = localStorage.getItem('cineloom-token') || '' } catch {}
-document.getElementById('token').addEventListener('change', (e) => { try { localStorage.setItem('cineloom-token', e.target.value) } catch {} })
 document.getElementById('go').addEventListener('click', async () => {
   const durationSeconds = Number(document.getElementById('duration').value) || undefined
-  const response = await fetch('/api/harness', { method: 'POST', headers: { 'content-type': 'application/json', 'x-cineloom-token': document.getElementById('token').value }, body: JSON.stringify({
+  const response = await fetch('/api/harness', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({
     brief: document.getElementById('brief').value, ratio: document.getElementById('ratio').value, durationSeconds, videoModel: document.getElementById('videoModel').value }) })
   if (!response.ok) alert((await response.json()).error)
+  else document.getElementById('brief').value = ''
   refreshJob()
 })
 setInterval(refreshJob, 2000); refreshJob()
