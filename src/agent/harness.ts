@@ -7,6 +7,7 @@ import { generateImage, generateVideo, type VideoModel } from '../lib/media.js'
 import { memoryStatus } from '../lib/memory.js'
 import { addAsset, createProject, projectDir, setStage, type Stage } from '../lib/project.js'
 import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
+import { writeDeliveryReport } from './delivery.js'
 import { enterPhase, finishFilm } from './finish.js'
 import { qualityGate, type QaVerdict } from './gate.js'
 import { jevConfig, judgeCopy, judgeStoryboard } from './jev.js'
@@ -296,6 +297,8 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   result.finalCut = finalCut
   result.wallSeconds = (Date.now() - started) / 1000
   await record('run', 'director', undefined, { wallSeconds: result.wallSeconds, qaRegenerations: result.qaRegenerations, rejectedAttempts, memoryAtEnd: await memoryStatus() })
+  // The report written inside finishFilm predates this final record; write it again so it carries the total.
+  await writeDeliveryReport(dir, brief, script, storyboard, finalCut)
   log(`▸ cut          ${finalCut}`)
   return result
 }

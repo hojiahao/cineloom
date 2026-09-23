@@ -8,9 +8,10 @@ HF=/home/orion/models/hf
 EDITX=/root/.cache/huggingface/hub/models--stepfun-ai--Step-Audio-EditX/snapshots/$(ls $HF/hub/models--stepfun-ai--Step-Audio-EditX/snapshots | head -1)
 TOK=/root/.cache/huggingface/hub/models--stepfun-ai--Step-Audio-Tokenizer/snapshots/$(ls $HF/hub/models--stepfun-ai--Step-Audio-Tokenizer/snapshots | head -1)
 mkdir -p runtime-data/step-audio
+deploy/spark/step-audio/apply-patches.sh
 docker run --rm --device nvidia.com/gpu=all --ipc=host --network host \
   -v "$PWD/runtime-data/Step-Audio-EditX:/app" \
   -v "$PWD/runtime-data/step-audio:/work" -v "$HF:/root/.cache/huggingface:ro" \
-  -e HF_HUB_OFFLINE=1 -e HF_MODULES_CACHE=/work/.hf_modules -e MODELSCOPE_CACHE=/work/.modelscope -e PYTHONPATH=/app \
+  -e STEP_AUDIO_ATTENTION_BACKEND="${STEP_AUDIO_ATTENTION_BACKEND:-TRITON_ATTN}" -e HF_HUB_OFFLINE=1 -e HF_MODULES_CACHE=/work/.hf_modules -e MODELSCOPE_CACHE=/work/.modelscope -e PYTHONPATH=/app \
   cineloom/step-audio:local tts_infer.py --model-path "$EDITX" --tokenizer-path "$TOK" --model-source local \
   --gpu-memory-utilization "${STEP_AUDIO_GPU_MEM:-0.12}" --max-model-len 3072 --enforce-eager --cosyvoice-dtype bfloat16 "$@"

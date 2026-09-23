@@ -49,7 +49,7 @@ ${shotRows}
 |---|---|
 | 需求 → 分镜（模型调用） | ${(stageSeconds('brief') + stageSeconds('script') + stageSeconds('compliance') + stageSeconds('storyboard')).toFixed(1)} s |
 | 定妆图 | ${gates.filter((row) => row.agent === 'product-hero').length} 次生成与质检 |
-| 首帧与质检 | ${gates.filter((row) => row.agent === 'quality-gate').length} 次质检，${director?.qaRegenerations ?? 0} 次重生成 |
+| 首帧与质检 | ${gates.filter((row) => row.agent === 'quality-gate').length} 次质检，${director?.qaRegenerations ?? new Set(gates.filter((row) => row.agent === 'quality-gate' && (row.attempt as number) > 0).map((row) => `${row.shot}/${row.attempt}`)).size} 次重生成 |
 | 视频 | ${clips.map((row) => `${(row.seconds as number).toFixed(0)} s`).join(' / ')} |
 | 配音 · 音乐 | ${audio.map((row) => `${row.agent} ${seconds(row.seconds)}${row.model ? ` (${row.model})` : ''}`).join(' · ') || '无声'} |
 | 总耗时 | ${director ? `${(director.wallSeconds as number).toFixed(0)} s` : '-'} |
