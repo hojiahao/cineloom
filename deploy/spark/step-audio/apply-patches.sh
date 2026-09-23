@@ -16,3 +16,10 @@ open(p, 'w').write(s)
 PY
   echo "patched $f"
 fi
+
+# transformers >= 5 returns a BatchEncoding from apply_chat_template(tokenize=True); the code expects a list of ids.
+f=runtime-data/Step-Audio-EditX/tts.py
+if ! grep -q "return_dict=False" "$f"; then
+  sed -i 's#return self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True)#return list(self.tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_dict=False))#' "$f"
+  echo "patched $f"
+fi
