@@ -20,7 +20,7 @@ that belongs to the same film.
 ## Workflow
 
 1. Read the brief and the approved script. One script beat becomes one shot of 5 seconds.
-2. Describe the product once, in `product`: container type, material, colours, and the label text in quotes. Every shot shows that same product. In `image_prompt` call it "the product" and do not describe it again - the pipeline generates one approved hero still from `product` and anchors every frame to it, because a product described per shot drifts (a can in shot 1 became a bottle in shot 2).
+2. Describe the product once, in `product`, in English: container type, material, colours, and the label text in quotes (the only place Chinese may appear - anything else in Chinese gets painted onto the product). Every shot shows that same product. In `image_prompt` call it "the product" and do not describe it again - the pipeline generates one approved hero still from `product` and anchors every frame to it, because a product described per shot drifts (a can in shot 1 became a bottle in shot 2).
 3. Write one `style` line - palette, light, texture, mood - and nothing else. No numbers, no lens specs, no resolution tags: the image model paints short tokens like "50mm" into the picture as text. Style and the no-text rule are appended to every shot automatically.
 4. Never ask for captions, slogans or subtitles in `image_prompt`. On-screen text is typeset in post-production in a real font; text drawn by the model warps, duplicates and turns rare characters into common ones. Put the beat's text in `on_screen_text` only.
 5. Design around what the models do badly. Prefer product, liquid, ice, glass, steam, light and macro compositions. Use at most one shot with a person, framed so that hands and face are not the subject. Never two subjects or two actions in one shot: the video model picks one.
@@ -92,7 +92,7 @@ is rejected by the validator before anything is generated.
 
 - Two subjects or two actions in one shot: the video model picks one. Split the shot.
 - Text requested inside the image, or a style line with numbers in it: it shows up as stray lettering and the gate rejects the frame.
-- Re-describing the product in a shot: the description competes with the hero still and the product drifts.
+- Re-describing the product in a shot: the description competes with the hero still and the product drifts ("brass-finish texture" made a dark grey keyboard gold). Judged by Jev and rejected.
 - The same framing three times in a row, or two neighbours with the same framing and camera move: the film reads as one long shot (the keyboard film was three near-identical three-quarter views). Rejected by the validator.
 - A shot that depends on something the models cannot draw reliably (a cursor moving across a screen, a specific UI): four attempts failed on it. Keep shots physical: product, hands-free material, light, liquid, texture.
 - A shot built around a screen, a display or UI: image models invent gibberish interfaces and the gate rejects them. Show the device, not what it shows.

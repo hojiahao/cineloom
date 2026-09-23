@@ -118,7 +118,8 @@ export async function judgeStoryboard(config: JevConfig, storyboard: Storyboard)
     const label = `shot ${shot.shot}`
     if (noul('asks_for_text') >= BLOCK_AT) problems.push(`${label}: image_prompt asks the model to draw text; on-screen text is typeset in post`)
     if (noul('multiple_actions') >= BLOCK_AT) problems.push(`${label}: more than one action or camera move; keep exactly one`)
-    if (noul('redescribes_product') >= 0.85) notes.push(`${label}: image_prompt re-describes the product; refer to it as "the product" only`)
+    // A re-described product competes with the hero still: "brass-finish texture" turned a dark grey keyboard gold in one frame.
+    if (noul('redescribes_product') >= 0.85) problems.push(`${label}: image_prompt re-describes the product's look; refer to it as "the product" only and leave its material, colours and label to the hero still`)
     if (!wantsPeople && noul('people_or_hands') >= BLOCK_AT) notes.push(`${label}: asks for a person or hand although must_show does not call for one; make it a product-only composition or say so in must_show`)
   }
   return { problems, notes, seconds, inputTokens, model }
