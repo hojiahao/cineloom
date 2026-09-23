@@ -258,3 +258,14 @@ describe('resting the language models', () => {
     expect(await isSleeping('http://127.0.0.1:1/v1')).toBeUndefined()
   })
 })
+
+describe('the product line is painted into the hero still', () => {
+  const script1 = { structure: 's', beats: [{ beat: 1, job: 'hook', see: 'x', vo: '一口下去，气泡在舌尖炸开', text: '气泡感' }] }
+  const shot = { shot: 1, seconds: 5, framing: 'macro', camera: 'slow push-in', image_prompt: 'the product on crushed ice', video_prompt: 'mist drifts. No people and no hands enter the frame', on_screen_text: '', must_show: 'the product upright' }
+  it('rejects Chinese outside the quoted label text', () => {
+    const problems = checkStoryboard({ style: 's', product: '无糖气泡水, tall slim can, matte white, label "冷" in blue', shots: [shot] }, script1, { brandText: '冷', product: 'sugar-free sparkling water' })
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/English except the label text/)
+    expect(checkStoryboard({ style: 's', product: 'a tall slim matte white can whose label reads "冷" in blue', shots: [shot] }, script1, { brandText: '冷', product: 'sugar-free sparkling water' })).toEqual([])
+  })
+})

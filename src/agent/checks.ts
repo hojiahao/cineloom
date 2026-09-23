@@ -125,6 +125,8 @@ export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: 
   if (!storyboard.product?.trim()) problems.push('product description is missing: describe container type, material, colours and label once')
   // The hero still is generated from this sentence. A copied example (a soda can for a face cream) went unnoticed once.
   else if (brief?.brandText && !storyboard.product.includes(brief.brandText)) problems.push(`product must describe THIS brief's product (${brief.product}) with the label text "${brief.brandText}" in quotes; it does not mention "${brief.brandText}"`)
+  // The product line is painted into the hero still. Chinese outside the quoted label text ("无糖气泡水, container: ...") ends up printed on the can, garbled.
+  if (storyboard.product?.trim() && CJK.test(storyboard.product.replace(/"[^"]*"|“[^”]*”/g, ''))) problems.push('product must be in English except the label text inside quotes: any other Chinese in it gets painted onto the product')
   if (storyboard.product?.trim() && brief && /\b(aluminium|aluminum|tin|soda|drink|beverage)?\s*cans?\b|气泡水|易拉罐/i.test(storyboard.product) && !/\bcan\b|aluminium|气泡|饮料|汽水|可乐|啤酒|soda|drink|beverage|water|beer|cola|tea|coffee|juice/i.test(brief.product)) problems.push('product describes a drink can but the brief is not for a canned drink; describe the actual product from the brief')
   if (brief && storyboard.product?.includes('matte-silver aluminium can') && !/can|罐|铝/i.test(brief.product)) problems.push('product is the example from the skill, not this brief\'s product')
   if (shots.length !== script.beats.length) problems.push(`one shot per beat: expected ${script.beats.length} shots, got ${shots.length}`)
@@ -205,7 +207,7 @@ const NO_TEXT = 'No captions, no subtitles, no slogans, no watermark, no numbers
 export function composeProductPrompt(storyboard: Storyboard, industry: Industry = 'general'): string {
   // "Stands upright" is right for a can and wrong for a keyboard: the hero once showed a keyboard on its end, and the end card inherited it.
   const pose = industry === 'electronics'
-    ? 'The product rests flat in its natural working position, seen from a slightly elevated three-quarter angle, centred and fully visible, on a seamless dark backdrop with a cool rim light'
+    ? 'The product rests flat in its natural working position, seen from a slightly elevated three-quarter angle, centred and fully visible, on a seamless dark backdrop with a cool rim light. Apart from its one small badge it carries no other words, logos or brand names anywhere'
     : 'The product stands upright, centred, fully visible, on a seamless neutral backdrop with soft even light'
   return `Studio product photograph of ${storyboard.product.trim().replace(/[.。]$/, '')}. ${pose}. ${NO_TEXT}. ${sanitizeStyle(storyboard.style)}`
 }

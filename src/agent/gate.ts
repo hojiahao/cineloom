@@ -17,20 +17,19 @@ export interface QaVerdict {
 }
 
 /**
- * The gate must never take the film down with it. A failed verdict is retried with a larger
- * budget; if the reviewer still cannot answer, the frame goes ahead marked unverified and the
- * delivery record says so.
+ * The gate must never take the film down with it, and it must not take an hour either: the local
+ * reviewer decodes at ~18 tokens/s, so one budget of 3000 tokens (~170 s worst case) is all a frame
+ * gets. A reviewer that cannot conclude in that budget counts as a rejection (score -1): the frame is
+ * regenerated like any other failure and, if nothing better comes, kept and reported as unverified.
+ * (Two escalating budgets once cost 18 minutes on a single frame and then accepted it blind.)
  */
 export async function qualityGate(reviewer: ModelEndpoint, frame: string, shot: Shot, productReference?: string): Promise<QaVerdict> {
   const [frameCopy, referenceCopy] = await Promise.all([reviewCopy(frame), productReference ? reviewCopy(productReference) : undefined])
-  for (const maxTokens of [3500, 6000]) {
-    try {
-      return await runGate(reviewer, frameCopy, shot, referenceCopy, maxTokens)
-    } catch {
-      // fall through to the larger budget
-    }
+  try {
+    return await runGate(reviewer, frameCopy, shot, referenceCopy, 3000)
+  } catch {
+    return { pass: false, score: -1, issues: ['reviewer inconclusive within its budget'] }
   }
-  return { pass: true, score: -1, issues: ['quality gate unavailable: frame accepted unverified'] }
 }
 
 async function runGate(reviewer: ModelEndpoint, frame: string, shot: Shot, productReference: string | undefined, maxTokens: number): Promise<QaVerdict> {
@@ -53,7 +52,7 @@ ${/\b(hand|hands|person|people|student|man|woman|girl|boy|model|holding|drinking
 Decide quickly; do not deliberate at length. Reply with JSON only: {"pass": boolean, "score": 0-100, "issues": ["short issue"]}. Pass requires score >= 80 and none of the reject conditions.`,
     },
     (verdict) => (typeof verdict.pass === 'boolean' && typeof verdict.score === 'number' ? [] : ['need boolean "pass" and numeric "score"']),
-    2,
+    1,
   )
   const issues = Array.isArray(run.value.issues) ? run.value.issues : []
   return { pass: run.value.pass && run.value.score >= 80, score: run.value.score, issues }
