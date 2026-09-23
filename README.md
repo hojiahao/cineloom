@@ -335,6 +335,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 |---|---|
 | `stepfun-ai/Step3-VL-10B-FP8`（本地，vLLM） | 视觉质检：定妆图与每一帧对照复核；参考片逐镜理解 |
 | Step-3.7-Flash（StepFun 开放平台 API，可选） | 创意总监级的方案发散。198B 参数，IQ4_XS 量化仍需约 116 GB，无法与扩散模型同机共存，因此走云端并在记录里标注 `cloud` |
+| `stepfun-ai/Step-Audio-EditX`（本地，容器 `cineloom/step-audio`，可选配音引擎） | 3B 的音频编辑模型：从一段参考音克隆音色，再按 `advertising` 等风格重新演绎口播。`CINELOOM_TTS_ENGINE=step-audio` 启用，参考音与参考文本由 `CINELOOM_TTS_REF_WAV` / `CINELOOM_TTS_REF_TEXT` 指定，`CINELOOM_TTS_STYLE` 可选；一支片的口播一次装载模型批量合成（`scripts/step-audio.sh batch`）。在 vLLM 0.27 与 transformers 5 上需要两处本地补丁（`deploy/spark/step-audio/apply-patches.sh`：注意力后端、chat 模板返回值） |
 
 **其他开源组件**
 
@@ -345,7 +346,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | ComfyUI · Wan2.2 I2V A14B（FP8）+ lightx2v 4-step LoRA | 默认视频模型：首帧驱动的 5 秒片段 |
 | ComfyUI · Wan2.2 TI2V-5B | 备选视频模型，支持无首帧的文生视频 |
 | ffmpeg · libass | 参考片切镜、尾帧续接；成片的转场、调色、颗粒、暗角、真字体标题字幕与混音 |
-| Kokoro-82M-v1.1-zh | 离线中文配音 |
+| Kokoro-82M-v1.1-zh | 离线中文配音（默认引擎；可切换为 StepFun Step-Audio-EditX 音色克隆） |
 | [Jev](https://docs.typesafe.ai/)（TypeSafe，云端 API，可选） | 结构化评估：对文案和分镜提出类型化问题，返回校准概率；`TYPESAFE_API_KEY` 存在时启用，只发送文本，记录标为 `cloud` |
 | ComfyUI · ACE-Step v1 3.5B | 本地生成器乐背景音乐 |
 | TypeScript · Node.js 22 · Vitest | CineLoom Harness、CLI、Studio 与测试（零运行时依赖） |
