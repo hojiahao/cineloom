@@ -1,0 +1,425 @@
+{
+  "date": "2026-09-23T04:10:26.340Z",
+  "model": "nemotron-3.5-lightning",
+  "briefs": 8,
+  "repeats": 2,
+  "method": "one attempt per stage, thinking off, scored by src/agent/checks.ts plus two frame-level failure modes",
+  "withSkills": {
+    "runs": 16,
+    "scriptCleanFirstTry": "14/16",
+    "storyboardCleanFirstTry": "6/15",
+    "meanScriptViolations": 0.13,
+    "meanStoryboardViolations": 0.8,
+    "meanSeconds": 199.67
+  },
+  "withoutSkills": {
+    "runs": 16,
+    "scriptCleanFirstTry": "11/16",
+    "storyboardCleanFirstTry": "0/15",
+    "meanScriptViolations": 0.38,
+    "meanStoryboardViolations": 3.8,
+    "meanSeconds": 71.29
+  },
+  "rows": [
+    {
+      "brief": "给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天，清爽",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: slow push-in with subtle handheld float)"
+        ],
+        "seconds": 196.93
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 3,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: static, subtle pan down as sweat rolls down face)",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text"
+        ],
+        "seconds": 69.817
+      }
+    },
+    {
+      "brief": "给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天，清爽",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 260.959
+      },
+      "withoutSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "restricted wording \"最佳\" (absolute_terms): 《广告法》第九条第（三）项禁止使用“国家级”“最高级”“最佳”等绝对化用语。"
+        ],
+        "storyboardViolations": 5,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 1: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 56.866
+      }
+    },
+    {
+      "brief": "一款叫“砾”的挂耳咖啡，10 秒横版广告，面向早起通勤的上班族，温暖克制",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: slow push-in with subtle handheld float)"
+        ],
+        "seconds": 186.805
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 3,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: camera must be exactly one move (found: slow dolly-in with focus pull)"
+        ],
+        "seconds": 61.993
+      }
+    },
+    {
+      "brief": "一款叫“砾”的挂耳咖啡，10 秒横版广告，面向早起通勤的上班族，温暖克制",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 128.472
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 6,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: static with subtle slow pan left)",
+          "shot 2: video_prompt must be in English and must not contain on-screen text",
+          "shot 2: camera must be exactly one move (found: static with slow upward tilt)",
+          "style line contains numbers, which the image model paints into the frame",
+          "shot 1: image_prompt asks the model to draw text",
+          "shot 2: image_prompt asks the model to draw text"
+        ],
+        "seconds": 68.521
+      }
+    },
+    {
+      "brief": "国货面霜“雾屿”的 15 秒竖版广告，面向 25-35 岁女性，强调保湿，质感高级",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 2,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: Slow push-in with a subtle handheld float)",
+          "shot 2: camera must be exactly one move (found: Slow pull-back with gentle tilt)"
+        ],
+        "seconds": 209.957
+      },
+      "withoutSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "restricted wording \"极致\" (absolute_terms): 《广告法》第九条第（三）项禁止使用“国家级”“最高级”“最佳”等绝对化用语。"
+        ],
+        "storyboardViolations": 7,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: Static close-up, subtle focus pull to the dewdrop)",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: camera must be exactly one move (found: Static, slight head tilt toward the brand text)",
+          "style line contains numbers, which the image model paints into the frame",
+          "shot 1: image_prompt asks the model to draw text",
+          "shot 2: image_prompt asks the model to draw text",
+          "shot 3: image_prompt asks the model to draw text"
+        ],
+        "seconds": 61.001
+      }
+    },
+    {
+      "brief": "国货面霜“雾屿”的 15 秒竖版广告，面向 25-35 岁女性，强调保湿，质感高级",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 161.835
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 3,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: Static close-up with subtle dolly in)",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 70.463
+      }
+    },
+    {
+      "brief": "手工香薰蜡烛品牌“栖”，15 秒竖版，送礼场景，安静治愈",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。"
+        ],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 189.052
+      },
+      "withoutSkills": {
+        "scriptViolations": 2,
+        "scriptProblems": [
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。",
+          "restricted wording \"治愈\" (medical_claim): 非医疗、药品、医疗器械广告不得涉及疾病治疗功能或使用医疗用语（《广告法》第十七条）。"
+        ],
+        "storyboardViolations": 2,
+        "storyboardProblems": [
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 77.609
+      }
+    },
+    {
+      "brief": "手工香薰蜡烛品牌“栖”，15 秒竖版，送礼场景，安静治愈",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 191.203
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 3,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text"
+        ],
+        "seconds": 70.408
+      }
+    },
+    {
+      "brief": "一款便携榨汁杯“果动”，20 秒竖版种草视频，面向健身人群，活力",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: No JSON object in mo"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "skipped: no script to storyboard"
+        ],
+        "seconds": 148.028
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 4,
+        "storyboardProblems": [
+          "shot 3: camera must be exactly one move (found: Static, slight head tilt toward camera as if acknowledging viewer)",
+          "style line contains numbers, which the image model paints into the frame",
+          "shot 1: image_prompt asks the model to draw text",
+          "shot 3: image_prompt re-describes the product instead of referring to \"the product\""
+        ],
+        "seconds": 79.418
+      }
+    },
+    {
+      "brief": "一款便携榨汁杯“果动”，20 秒竖版种草视频，面向健身人群，活力",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: No JSON object in mo"
+        ],
+        "seconds": 238.553
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 5,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 4: image_prompt asks the model to draw text"
+        ],
+        "seconds": 85.648
+      }
+    },
+    {
+      "brief": "新茶饮品牌“山雾”推出冷泡茶，15 秒竖版，年轻白领，清雅东方",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 2,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: slow pull-back with subtle handheld float)",
+          "shot 2: camera must be exactly one move (found: slow push-in with steady tilt)"
+        ],
+        "seconds": 128.755
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 5,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "style line contains numbers, which the image model paints into the frame",
+          "shot 3: image_prompt asks the model to draw text"
+        ],
+        "seconds": 75.058
+      }
+    },
+    {
+      "brief": "新茶饮品牌“山雾”推出冷泡茶，15 秒竖版，年轻白领，清雅东方",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: slow push-in with a subtle handheld float)"
+        ],
+        "seconds": 213.769
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 5,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 2: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "style line contains numbers, which the image model paints into the frame",
+          "shot 3: image_prompt asks the model to draw text"
+        ],
+        "seconds": 84.702
+      }
+    },
+    {
+      "brief": "国产机械键盘“青轴社”，15 秒横版，面向程序员，利落有科技感",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 0,
+        "storyboardProblems": [],
+        "seconds": 257.357
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 4,
+        "storyboardProblems": [
+          "shot 1: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text",
+          "shot 3: camera must be exactly one move (found: static slow pull back)",
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 55.551
+      }
+    },
+    {
+      "brief": "国产机械键盘“青轴社”，15 秒横版，面向程序员，利落有科技感",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: Expected ',' or ']' "
+        ],
+        "seconds": 243.291
+      },
+      "withoutSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "shot 3: camera must be exactly one move (found: steady dolly forward or static with subtle movement)"
+        ],
+        "seconds": 58.588
+      }
+    },
+    {
+      "brief": "儿童保温杯“小鲸”，15 秒竖版，面向年轻父母，安心可爱",
+      "repeat": 1,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 2,
+        "storyboardProblems": [
+          "shot 1: camera must be exactly one move (found: slow push-in with subtle handheld float)",
+          "shot 3: camera must be exactly one move (found: slow pull-back with subtle tilt)"
+        ],
+        "seconds": 173.601
+      },
+      "withoutSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "beat 2: voiceover has only 7 characters; write 8-18 so the beat is not mostly silence"
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "style line contains numbers, which the image model paints into the frame"
+        ],
+        "seconds": 112.056
+      }
+    },
+    {
+      "brief": "儿童保温杯“小鲸”，15 秒竖版，面向年轻父母，安心可爱",
+      "repeat": 2,
+      "withSkills": {
+        "scriptViolations": 0,
+        "scriptProblems": [],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: No JSON object in mo"
+        ],
+        "seconds": 266.188
+      },
+      "withoutSkills": {
+        "scriptViolations": 1,
+        "scriptProblems": [
+          "no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid JSON: Expected ',' or '}' "
+        ],
+        "storyboardViolations": 1,
+        "storyboardProblems": [
+          "skipped: no script to storyboard"
+        ],
+        "seconds": 52.959
+      }
+    }
+  ]
+}

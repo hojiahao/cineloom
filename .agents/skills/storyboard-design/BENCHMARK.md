@@ -7,39 +7,40 @@ so a violation is a rule the retry loop would otherwise have to clean up.
 
 ## Evaluation metadata
 
-- Date: 2026-09-22
+- Date: 2026-09-23
 - Model: `nemotron-3.5-lightning` served locally by vLLM on one DGX Spark (GB10), thinking off
 - Briefs: 8 advertising requests in `eval/briefs.json`, 2 runs each
-- Raw data: `eval/results/ablation-v2.json` · Reproduce: `cineloom eval --repeats 2 && cineloom eval --report-only`
+- Raw data: `eval/results/ablation-v3.json` · Reproduce: `cineloom eval --repeats 2 && cineloom eval --report-only`
 
 ## Results
 
 | Measure | Baseline (no skill) | With skill |
 |---|---:|---:|
-| Runs scored | 16 | 15 |
-| Clean on the first attempt | 0/16 (0%) | 7/15 (47%) |
-| Mean rule violations per run | 3.88 | 0.8 |
+| Runs scored | 15 | 15 |
+| Clean on the first attempt | 0/15 (0%) | 6/15 (40%) |
+| Mean rule violations per run | 3.8 | 0.8 |
 
 ### Most frequent violations without the skill
 
 | Count | Violation |
 |---:|---|
-| 24 | image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text |
-| 12 | image_prompt asks the model to draw text |
-| 11 | style line contains numbers, which the image model paints into the frame |
-| 3 | video_prompt must be in English and must not contain on-screen text |
-| 1 | camera must be exactly one move (found: slow tilt-down from blazing sun to the student's f |
-| 1 | camera must be exactly one move (found: slow pull-back or orbit around the product, gentle |
+| 25 | image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text |
+| 10 | style line contains numbers, which the image model paints into the frame |
+| 9 | image_prompt asks the model to draw text |
+| 2 | video_prompt must be in English and must not contain on-screen text |
+| 1 | camera must be exactly one move (found: static, subtle pan down as sweat rolls down face) |
+| 1 | camera must be exactly one move (found: slow dolly-in with focus pull) |
 
 ### Violations that remain with the skill
 
 | Count | Violation |
 |---:|---|
-| 7 | camera must be exactly one move (found: slow push-in with subtle handheld float) |
-| 2 | no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid  |
-| 1 | image_prompt must be in English; Chinese is only allowed inside the quoted on-screen text |
+| 3 | camera must be exactly one move (found: slow push-in with subtle handheld float) |
+| 3 | no usable JSON: nemotron did not return usable JSON after 1 attempts: reply was not valid  |
+| 1 | camera must be exactly one move (found: Slow push-in with a subtle handheld float) |
+| 1 | camera must be exactly one move (found: Slow pull-back with gentle tilt) |
 | 1 | camera must be exactly one move (found: slow pull-back with subtle handheld float) |
-| 1 | camera must be exactly one move (found: slow push-in with gentle handheld drift) |
+| 1 | camera must be exactly one move (found: slow push-in with steady tilt) |
 
 ## Reading these numbers
 
