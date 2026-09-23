@@ -7,13 +7,18 @@
  * machine: a 5-second Wan clip is ~200 s of compute plus ~150 s of weight traffic.
  *
  * vLLM's sleep mode (`--enable-sleep-mode`) fixes that: level 2 discards the weights and the KV
- * cache, `wake_up` reloads them from NVMe. The harness sleeps the planner during frames, both
+ * cache; `wake_up` plus a `reload_weights` RPC brings them back from NVMe. The harness sleeps the planner during frames, both
  * services during clips, and every request wakes its endpoint first, so a caller never sees a
  * sleeping model. Servers started without the flag answer 404 and are simply left alone.
  */
 
 /** Per service: 'awake', 'asleep', or 'none' for a server without sleep mode (asked once). */
 const state = new Map<string, 'awake' | 'asleep' | 'none'>()
+/** The sleep level each service was put to by us: level 2 discards the weights and they must be reloaded after wake_up. */
+const level = new Map<string, 1 | 2>()
+
+/** 2 (default): release weights and KV cache, reload from disk on wake. 1: keep the weights in host memory (frees nothing on a unified-memory machine). */
+export const sleepLevel = (): 1 | 2 => (process.env.CINELOOM_SLEEP_LEVEL === '1' ? 1 : 2)
 
 /** `http://host:port/v1` -> `http://host:port` */
 export const serviceRoot = (baseUrl: string) => baseUrl.replace(/\/v1\/?$/, '')
@@ -48,6 +53,12 @@ export async function ensureAwake(baseUrl: string): Promise<{ wokeSeconds?: numb
   const started = Date.now()
   const response = await fetch(`${serviceRoot(baseUrl)}/wake_up`, { method: 'POST', signal: AbortSignal.timeout(600000) })
   if (!response.ok) throw new Error(`could not wake ${baseUrl}: ${response.status}`)
+  // After a level-2 sleep the weight buffers are allocated but empty: a model that answers "后汉书后汉书…"
+  // is one that was woken without this step. The reload is the price of the freed memory (~90 s here).
+  if ((level.get(baseUrl) ?? sleepLevel()) === 2) {
+    const reload = await fetch(`${serviceRoot(baseUrl)}/collective_rpc`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ method: 'reload_weights' }), signal: AbortSignal.timeout(900000) })
+    if (!reload.ok) throw new Error(`could not reload weights on ${baseUrl}: ${reload.status}`)
+  }
   state.set(baseUrl, 'awake')
   return { wokeSeconds: (Date.now() - started) / 1000 }
 }
@@ -61,8 +72,9 @@ export async function sleepService(baseUrl: string): Promise<boolean> {
     return false
   }
   if (!sleeping) {
-    const response = await fetch(`${serviceRoot(baseUrl)}/sleep?level=2`, { method: 'POST', signal: AbortSignal.timeout(120000) })
+    const response = await fetch(`${serviceRoot(baseUrl)}/sleep?level=${sleepLevel()}`, { method: 'POST', signal: AbortSignal.timeout(120000) })
     if (!response.ok) throw new Error(`could not sleep ${baseUrl}: ${response.status}`)
+    level.set(baseUrl, sleepLevel())
   }
   state.set(baseUrl, 'asleep')
   return true
