@@ -35,6 +35,8 @@ export interface HarnessOptions {
   candidates?: number
   /** Generate every candidate even after one passed, and keep the best score. Default: stop at the first pass. */
   bestOf?: boolean
+  /** Render the next shot's first candidate while the current one is judged (default true). */
+  prefetch?: boolean
   log?: (line: string) => void
 }
 
@@ -254,28 +256,42 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
 
   await enterPhase(comfy, 'frames (Qwen-Image-Edit)', record)
   const frames = new Map<number, string>()
-  for (const shot of storyboard.shots) {
+  const frameSizeFor = frameSize(options.resolution ?? '720p', brief.ratio)
+  const framePath = (shot: Shot, suffix: string) => join(dir, 'frames', `shot_${String(shot.shot).padStart(3, '0')}${suffix}.png`)
+  const render = (shot: Shot, prompt: string, suffix: string) => {
+    const path = framePath(shot, suffix)
+    return generateImage(comfy, { prompt, size: frameSizeFor, output: path, references: [hero!.path] }).then((image) => ({ path, image }))
+  }
+  // The image model and the reviewer are different processes: while the reviewer judges this
+  // shot's first candidate, the next shot's first candidate is already rendering.
+  let prefetched: { shot: number; rendering: Promise<{ path: string; image: { seconds: number } }> } | undefined
+  for (const [index, shot] of storyboard.shots.entries()) {
     let prompt = composeImagePrompt(shot, storyboard, true, industryOf(brief.product))
     let best: { path: string; verdict: QaVerdict } | undefined
     const consider = (path: string, verdict: QaVerdict) => {
       if (!best || (verdict.pass && !best.verdict.pass) || (verdict.pass === best.verdict.pass && verdict.score > best.verdict.score)) best = { path, verdict }
     }
-    const shoot = async (suffix: string, attempt: number) => {
-      const path = join(dir, 'frames', `shot_${String(shot.shot).padStart(3, '0')}${suffix}.png`)
-      const image = await generateImage(comfy, { prompt, size: frameSize(options.resolution ?? '720p', brief.ratio), output: path, references: [hero!.path] })
-      const verdict = await qualityGate(reviewer, path, shot, hero!.path)
-      log(`▸ frame ${shot.shot}${suffix.padEnd(5)} ${image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
-      await record('qa', 'quality-gate', reviewer, { shot: shot.shot, attempt, candidate: suffix || '_a', imageSeconds: image.seconds, ...verdict })
-      consider(path, verdict)
+    const judge = async (rendered: { path: string; image: { seconds: number } }, suffix: string, attempt: number) => {
+      const verdict = await qualityGate(reviewer, rendered.path, shot, hero!.path)
+      log(`▸ frame ${shot.shot}${suffix.padEnd(5)} ${rendered.image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
+      await record('qa', 'quality-gate', reviewer, { shot: shot.shot, attempt, candidate: suffix || '_a', imageSeconds: rendered.image.seconds, ...verdict })
+      consider(rendered.path, verdict)
     }
+    const shoot = async (suffix: string, attempt: number) => judge(await render(shot, prompt, suffix), suffix, attempt)
+    const first = prefetched?.shot === shot.shot ? await prefetched.rendering : await render(shot, prompt, '')
+    prefetched = undefined
+    const judging = judge(first, '', 0)
+    const next = storyboard.shots[index + 1]
+    if (next && options.prefetch !== false) prefetched = { shot: next.shot, rendering: render(next, composeImagePrompt(next, storyboard, true, industryOf(brief.product)), '') }
+    await judging
     // Best of N: the same prompt with different seeds. A diffusion model's spread between
     // seeds is often larger than what a prompt edit buys, and the gate can rank the results.
     // By default the next seed is only spent when the previous one failed the gate (a frame that
     // passed is a frame); `bestOf` generates every candidate and keeps the highest score.
     const candidates = Math.max(1, options.candidates ?? 2)
-    for (let index = 0; index < candidates; index++) {
-      if (index > 0 && !options.bestOf && best?.verdict.pass) break
-      await shoot(index === 0 ? '' : `_c${index + 1}`, 0)
+    for (let candidate = 1; candidate < candidates; candidate++) {
+      if (!options.bestOf && best?.verdict.pass) break
+      await shoot(`_c${candidate + 1}`, 0)
     }
     for (let attempt = 1; attempt <= MAX_QA_REGENERATIONS && !best!.verdict.pass; attempt++) {
       result.qaRegenerations++
