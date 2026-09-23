@@ -309,11 +309,15 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
 
   // ---- cut -------------------------------------------------------------------------------
   await setStage(brief.id, 'cut', 'running')
+  // Finishing (voice, music, titles, grade) needs neither language model, so their ~100 s weight
+  // reload runs underneath it instead of after it.
+  const waking = Promise.all([planner, reviewer].map((target) => wakeService(target.baseUrl).then((woke) => record('run', 'scheduler', undefined, { phase: 'cut', woke: target.name, wokeSeconds: woke.wokeSeconds ?? 0 })).catch(() => undefined)))
   const finalCut = await finishFilm({ dir, brief, script, storyboard, heroPath: hero!.path, comfy, audio: options.audio, silent: options.silent, record, log })
   await addAsset(brief.id, { id: 'final-cut', kind: 'video', stage: 'cut', path: 'cut/final.mp4', execution: 'local-dgx-spark', model: 'ffmpeg' })
   await setStage(brief.id, 'cut', 'done', `${(await probeDuration(finalCut)).toFixed(1)}s`)
   result.finalCut = finalCut
-  for (const target of [planner, reviewer]) await wakeService(target.baseUrl).catch(() => undefined)
+  // The language models were woken while the film was being finished; make sure both are back before we return.
+  await waking
   result.wallSeconds = (Date.now() - started) / 1000
   await record('run', 'director', undefined, { wallSeconds: result.wallSeconds, qaRegenerations: result.qaRegenerations, rejectedAttempts, memoryAtEnd: await memoryStatus() })
   // The report written inside finishFilm predates this final record; write it again so it carries the total.
