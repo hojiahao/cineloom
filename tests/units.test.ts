@@ -239,3 +239,15 @@ describe('category playbooks in the storyboard check', () => {
     expect(problems[0]).toMatch(/same framing and camera move/)
   })
 })
+
+import { serviceRoot, isSleeping } from '../src/lib/rest.js'
+
+describe('resting the language models', () => {
+  it('derives the vLLM control root from the OpenAI base url', () => {
+    expect(serviceRoot('http://127.0.0.1:8001/v1')).toBe('http://127.0.0.1:8001')
+    expect(serviceRoot('http://127.0.0.1:8001/v1/')).toBe('http://127.0.0.1:8001')
+  })
+  it('treats a server without sleep mode as one to leave alone', async () => {
+    expect(await isSleeping('http://127.0.0.1:1/v1')).toBeUndefined()
+  })
+})

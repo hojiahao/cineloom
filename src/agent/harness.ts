@@ -4,6 +4,7 @@ import { ComfyClient } from '../comfy/client.js'
 import { scanCopy } from '../lib/compliance.js'
 import { probeDuration } from '../lib/ffmpeg.js'
 import { generateImage, generateVideo, videoSize, type VideoModel } from '../lib/media.js'
+import { sleepService, wakeService } from '../lib/rest.js'
 import { memoryStatus } from '../lib/memory.js'
 import { addAsset, createProject, projectDir, setStage, type Stage } from '../lib/project.js'
 import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, industryOf, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
@@ -215,6 +216,14 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   const comfy = new ComfyClient()
   await setStage(brief.id, 'frames', 'running')
   await setStage(brief.id, 'qa', 'running')
+  // The planner is not needed while pictures are made (a prompt repair wakes it on demand);
+  // releasing its memory lets ComfyUI keep the image model resident between frames.
+  const rest = async (phase: string, targets: ModelEndpoint[]) => {
+    const slept: string[] = []
+    for (const target of targets) if (await sleepService(target.baseUrl).catch(() => false)) slept.push(target.name)
+    if (slept.length) await record('run', 'scheduler', undefined, { phase, sleeping: slept, availableAfterSleepGb: (await memoryStatus()).availableGb })
+  }
+  await rest('product hero (Qwen-Image)', [planner])
   await enterPhase(comfy, 'product hero (Qwen-Image)', record)
   // The hero still: one approved picture of the product that every shot is generated from,
   // so the can in shot 3 is the can in shot 1. A text description alone let it drift.
@@ -284,6 +293,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
 
   // ---- clips -----------------------------------------------------------------------------
   await setStage(brief.id, 'clips', 'running')
+  await rest('clips (Wan2.2)', [planner, reviewer])
   await enterPhase(comfy, 'clips (Wan2.2)', record)
   for (const [index, shot] of storyboard.shots.entries()) {
     const output = join(dir, 'clips', `shot_${String(shot.shot).padStart(3, '0')}.mp4`)
@@ -303,6 +313,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   await addAsset(brief.id, { id: 'final-cut', kind: 'video', stage: 'cut', path: 'cut/final.mp4', execution: 'local-dgx-spark', model: 'ffmpeg' })
   await setStage(brief.id, 'cut', 'done', `${(await probeDuration(finalCut)).toFixed(1)}s`)
   result.finalCut = finalCut
+  for (const target of [planner, reviewer]) await wakeService(target.baseUrl).catch(() => undefined)
   result.wallSeconds = (Date.now() - started) / 1000
   await record('run', 'director', undefined, { wallSeconds: result.wallSeconds, qaRegenerations: result.qaRegenerations, rejectedAttempts, memoryAtEnd: await memoryStatus() })
   // The report written inside finishFilm predates this final record; write it again so it carries the total.

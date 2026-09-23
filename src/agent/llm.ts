@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
 import { extractJson } from '../lib/vision.js'
+import { ensureAwake } from '../lib/rest.js'
 
 export interface ModelEndpoint {
   name: string
@@ -63,6 +64,7 @@ export async function chat(endpoint: ModelEndpoint, options: ChatOptions): Promi
     const mime = extname(image).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg'
     content.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${(await readFile(image)).toString('base64')}` } })
   }
+  if (endpoint.execution !== 'cloud') await ensureAwake(endpoint.baseUrl)
   const started = Date.now()
   const request = () =>
     fetch(`${endpoint.baseUrl}/chat/completions`, {

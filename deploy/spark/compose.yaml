@@ -44,6 +44,8 @@ services:
       - --kv-cache-dtype=fp8
       - --enable-prefix-caching
       - --gpu-memory-utilization=${NEMOTRON_GPU_MEM:-0.25}
+      # Lets the harness release this service's memory while the diffusion models run (src/lib/rest.ts).
+      - --enable-sleep-mode
       - --max-model-len=${NEMOTRON_MAX_LEN:-65536}
       - --mamba-backend=flashinfer
       - --mamba-cache-mode=align
@@ -73,6 +75,7 @@ services:
       - --port=8000
       - --trust-remote-code
       - --gpu-memory-utilization=${STEPVL_GPU_MEM:-0.20}
+      - --enable-sleep-mode
       - --max-model-len=${STEPVL_MAX_LEN:-32768}
       - --limit-mm-per-prompt={"image":12}
       - --reasoning-parser=deepseek_r1

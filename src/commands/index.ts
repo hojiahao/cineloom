@@ -7,13 +7,14 @@ import { CATEGORIES, scanCopy, type Category } from '../lib/compliance.js'
 import { assembleFilm, detectCuts, extractFrame, probeDuration } from '../lib/ffmpeg.js'
 import { generateImage, generateVideo } from '../lib/media.js'
 import { memoryStatus, planMemory } from '../lib/memory.js'
+import { sleepService, wakeService } from '../lib/rest.js'
 import { addAsset, createProject, loadProject, projectDir, setStage, STAGES, type Stage, type StageStatus } from '../lib/project.js'
 import { buildShots } from '../lib/shots.js'
 import type { Brief, Script, Storyboard } from '../agent/checks.js'
 import { CROSSFADE_SECONDS, FINAL_SIZE, finishFilm, type Recorder } from '../agent/finish.js'
 import { qualityGate } from '../agent/gate.js'
 import { runHarness } from '../agent/harness.js'
-import { endpoints } from '../agent/llm.js'
+import { endpoints, type ModelEndpoint } from '../agent/llm.js'
 import { runAblation, writeBenchmarks } from '../agent/evals.js'
 import { startStudio } from '../studio/server.js'
 
@@ -151,7 +152,16 @@ async function mem(args: ParsedArgs): Promise<number> {
     print({ availableBeforeGb: status.availableGb, availableAfterGb: (await memoryStatus()).availableGb })
     return 0
   }
-  throw new UsageError('usage: cineloom mem <status|plan|free> [--need name=GB ...] [--reserve 10] [--against total|available]')
+  if (action === 'sleep' || action === 'wake') {
+    // Release (or restore) the language models' memory by hand, e.g. before a long ComfyUI session.
+    const { planner, reviewer } = endpoints()
+    const targets = (args.positionals[1] ? [args.positionals[1]] : ['planner', 'reviewer']).map((name) => (name === 'planner' ? planner : name === 'reviewer' ? reviewer : undefined)).filter((item): item is ModelEndpoint => Boolean(item))
+    const result: Record<string, unknown> = {}
+    for (const target of targets) result[target.name] = action === 'sleep' ? (await sleepService(target.baseUrl)) ? 'asleep' : 'no sleep mode' : await wakeService(target.baseUrl)
+    print({ ...result, availableGb: (await memoryStatus()).availableGb })
+    return 0
+  }
+  throw new UsageError('usage: cineloom mem <status|plan|free|sleep|wake> [planner|reviewer] [--need name=GB ...] [--reserve 10] [--against total|available]')
 }
 
 /** The same gate the harness runs, for one frame. */

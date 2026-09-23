@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
+import { ensureAwake } from './rest.js'
 
 export interface VisionConfig {
   baseUrl: string
@@ -17,6 +18,7 @@ export function visionConfig(): VisionConfig {
 
 /** Ask the local vision model about one or more images through the OpenAI-compatible chat API. */
 export async function askVision(question: string, images: string[], config = visionConfig()): Promise<string> {
+  await ensureAwake(config.baseUrl)
   const content: unknown[] = [{ type: 'text', text: question }]
   for (const image of images) {
     const mime = extname(image).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg'
