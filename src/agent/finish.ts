@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { ComfyClient } from '../comfy/client.js'
-import { generateMusic, mixSoundtrack, synthesizeVoice } from '../lib/audio.js'
+import { generateMusic, mixSoundtrack, synthesizeVoices } from '../lib/audio.js'
 import { assembleFilm, clipStart, filmLength, fontCovers, stillToClip } from '../lib/ffmpeg.js'
 import { memoryStatus } from '../lib/memory.js'
 import { buildAss } from '../lib/titles.js'
@@ -78,11 +78,11 @@ export async function finishFilm(input: FinishInput): Promise<string> {
   if (!options.silent) {
     const total = filmLength(durations, CROSSFADE_SECONDS)
     const voices: Array<{ path: string; start: number }> = []
+    const lines = script.beats.map((beat, index) => ({ text: beat.vo, output: join(dir, 'audio', `vo_${index + 1}.wav`), maxSeconds: durations[index]! - 0.9 }))
+    const spoken = await synthesizeVoices(lines)
     for (const [index, beat] of script.beats.entries()) {
-      const path = join(dir, 'audio', `vo_${index + 1}.wav`)
-      const voice = await synthesizeVoice(beat.vo, path, durations[index]! - 0.9)
-      voices.push({ path, start: clipStart(index, durations, CROSSFADE_SECONDS) + 0.45 })
-      await record('cut', 'voiceover', undefined, { beat: beat.beat, seconds: voice.seconds, speed: voice.speed, model: 'Kokoro-82M-v1.1-zh' })
+      voices.push({ path: lines[index]!.output, start: clipStart(index, durations, CROSSFADE_SECONDS) + 0.45 })
+      await record('cut', 'voiceover', undefined, { beat: beat.beat, seconds: spoken[index]!.seconds, speed: spoken[index]!.speed, model: spoken[index]!.model })
     }
     let music = options.audio
     if (!music) {

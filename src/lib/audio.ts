@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises'
-import { dirname, resolve } from 'node:path'
+import { copyFile, mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join, relative, resolve } from 'node:path'
 import { ComfyClient } from '../comfy/client.js'
 import { loadWorkflow, renderWorkflow } from '../comfy/workflow.js'
 import { exec } from './exec.js'
@@ -22,6 +22,52 @@ export async function synthesizeVoice(text: string, output: string, maxSeconds: 
     speed = Math.min(1.25, speed * (seconds / maxSeconds) * 1.03)
   }
   return { seconds: await probeDuration(output), speed }
+}
+
+export interface VoiceLine { text: string; output: string; maxSeconds: number }
+export interface VoiceResult { seconds: number; speed: number; model: string }
+
+/** Which offline voice engine the film uses: Kokoro (default) or StepFun's Step-Audio-EditX cloning a reference voice. */
+export const ttsEngine = (): 'kokoro' | 'step-audio' => (process.env.CINELOOM_TTS_ENGINE === 'step-audio' ? 'step-audio' : 'kokoro')
+
+/**
+ * All voiceover lines of a film. Kokoro synthesises them one by one; Step-Audio-EditX loads its
+ * model once for the whole batch (scripts/step-audio.sh batch), cloning the reference voice given by
+ * CINELOOM_TTS_REF_WAV / CINELOOM_TTS_REF_TEXT and, with CINELOOM_TTS_STYLE, re-voicing each line in
+ * that style. A line that overruns its slot is time-stretched, at most 1.25x, never cut.
+ */
+export async function synthesizeVoices(lines: VoiceLine[]): Promise<VoiceResult[]> {
+  if (ttsEngine() !== 'step-audio') {
+    const results: VoiceResult[] = []
+    for (const line of lines) results.push({ ...(await synthesizeVoice(line.text, line.output, line.maxSeconds)), model: 'Kokoro-82M-v1.1-zh' })
+    return results
+  }
+  const work = resolve(process.env.CINELOOM_STEP_AUDIO_DIR ?? 'runtime-data/step-audio')
+  const reference = resolve(process.env.CINELOOM_TTS_REF_WAV ?? '')
+  const referenceText = process.env.CINELOOM_TTS_REF_TEXT ?? ''
+  if (!process.env.CINELOOM_TTS_REF_WAV || !referenceText) throw new Error('CINELOOM_TTS_ENGINE=step-audio needs CINELOOM_TTS_REF_WAV (a wav under runtime-data/step-audio/) and CINELOOM_TTS_REF_TEXT (what it says)')
+  if (!reference.startsWith(`${work}/`)) throw new Error(`the reference voice must live under ${work} so the container can read it`)
+  const inside = (path: string) => `/work/${relative(work, path)}`
+  const jobDir = join(work, 'jobs', `${Date.now().toString(36)}`)
+  await mkdir(jobDir, { recursive: true })
+  const jobs = { prompt_audio: inside(reference), prompt_text: referenceText, style: process.env.CINELOOM_TTS_STYLE || null,
+    lines: lines.map((line, index) => ({ text: line.text, output: inside(join(jobDir, `vo_${index + 1}.wav`)) })) }
+  await writeFile(join(jobDir, 'jobs.json'), JSON.stringify(jobs, null, 2))
+  await exec('bash', [resolve(process.env.CINELOOM_STEP_AUDIO_SCRIPT ?? 'scripts/step-audio.sh'), 'batch', inside(join(jobDir, 'jobs.json'))])
+  const results: VoiceResult[] = []
+  for (const [index, line] of lines.entries()) {
+    const raw = join(jobDir, `vo_${index + 1}.wav`)
+    await mkdir(dirname(line.output), { recursive: true })
+    let seconds = await probeDuration(raw)
+    let speed = 1
+    if (seconds > line.maxSeconds) {
+      speed = Math.min(1.25, seconds / line.maxSeconds)
+      await exec('ffmpeg', ['-y', '-v', 'error', '-i', raw, '-af', `atempo=${speed.toFixed(3)}`, line.output])
+      seconds = await probeDuration(line.output)
+    } else await copyFile(raw, line.output)
+    results.push({ seconds, speed, model: `Step-Audio-EditX${jobs.style ? ` (${jobs.style})` : ''}` })
+  }
+  return results
 }
 
 /** An instrumental bed generated locally by ACE-Step through ComfyUI: nothing licensed, nothing uploaded. */
