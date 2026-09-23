@@ -33,6 +33,8 @@ services:
     environment:
       HF_HOME: /models/hf
       HF_HUB_OFFLINE: "1"
+      # The sleep/wake endpoints used by src/lib/rest.ts are behind vLLM's dev-mode switch.
+      VLLM_SERVER_DEV_MODE: "1"
     volumes:
       - ${SPARK_MODEL_DIR:-/home/orion/models}:/models
     command:
@@ -64,6 +66,8 @@ services:
     environment:
       HF_HOME: /models/hf
       HF_HUB_OFFLINE: "1"
+      # The sleep/wake endpoints used by src/lib/rest.ts are behind vLLM's dev-mode switch.
+      VLLM_SERVER_DEV_MODE: "1"
       # DeepGEMM's FP8 kernels assert on GB10 ("Unknown SF transformation"); use vLLM's generic FP8 path.
       VLLM_USE_DEEP_GEMM: "0"
     volumes:
