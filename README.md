@@ -114,6 +114,8 @@ https://github.com/user-attachments/assets/417796a8-5f80-495c-9ec8-72c4bf01da8b
 
 <!-- video:cream-9x16 -->
 
+<p align="center"><a href="docs/showcase/cream-9x16-framed.mp4"><img src="docs/showcase/cream-9x16-poster.jpg" alt="保湿面霜“润”成片，点击播放" width="880"></a><br><sub>▶ 点击画面播放成片（MP4，2.3 MB，有声）</sub></p>
+
 <details>
 <summary>规格、创意原话、四格画面、定妆图与这次运行的记录</summary>
 
@@ -139,6 +141,8 @@ https://github.com/user-attachments/assets/417796a8-5f80-495c-9ec8-72c4bf01da8b
 ### 案例四 · 食品：挂耳咖啡“醒”（15 秒横版广告）
 
 <!-- video:coffee-16x9 -->
+
+<p align="center"><a href="docs/showcase/coffee-16x9.mp4"><img src="docs/showcase/coffee-16x9-poster.jpg" alt="挂耳咖啡“醒”成片，点击播放" width="880"></a><br><sub>▶ 点击画面播放成片（MP4，1.9 MB，有声）</sub></p>
 
 <details>
 <summary>创意原话、四格画面、定妆图与这次运行的记录</summary>
