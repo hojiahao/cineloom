@@ -1,5 +1,13 @@
 import type { Shot } from './checks.js'
 import { chatJson, type ModelEndpoint } from './llm.js'
+import { exec } from '../lib/exec.js'
+
+/** The reviewer sees a 1024 px JPEG, not the full still: the verdict does not change, the prefill does. */
+async function reviewCopy(path: string): Promise<string> {
+  const copy = `${path}.review.jpg`
+  await exec('ffmpeg', ['-y', '-v', 'error', '-i', path, '-vf', "scale='min(1024,iw)':-2", '-q:v', '3', copy])
+  return copy
+}
 
 export interface QaVerdict {
   pass: boolean
@@ -14,9 +22,10 @@ export interface QaVerdict {
  * delivery record says so.
  */
 export async function qualityGate(reviewer: ModelEndpoint, frame: string, shot: Shot, productReference?: string): Promise<QaVerdict> {
+  const [frameCopy, referenceCopy] = await Promise.all([reviewCopy(frame), productReference ? reviewCopy(productReference) : undefined])
   for (const maxTokens of [3500, 6000]) {
     try {
-      return await runGate(reviewer, frame, shot, productReference, maxTokens)
+      return await runGate(reviewer, frameCopy, shot, referenceCopy, maxTokens)
     } catch {
       // fall through to the larger budget
     }

@@ -249,6 +249,7 @@ async function harnessCommand(args: ParsedArgs): Promise<number> {
     audio: flag(args, 'audio'),
     silent: flag(args, 'silent') === 'true',
     candidates: flag(args, 'candidates') ? numberFlag(args, 'candidates', 2) : undefined,
+    bestOf: flag(args, 'best-of') === 'true',
   })
   print(result)
   return 0

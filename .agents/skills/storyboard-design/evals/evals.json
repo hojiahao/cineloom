@@ -26,5 +26,12 @@
     "id": "storyboard-design-eval-004-one-camera-move-wording",
     "expected_skill": "storyboard-design",
     "expected_script": null
+  },
+  {
+    "id": "storyboard-design-eval-005-electronics-playbook",
+    "question": "脚本已通过合规：机械键盘“青”，15 秒横版，三拍。做分镜。",
+    "expected_skill": "storyboard-design",
+    "expected_script": null,
+    "ground_truth": "Three shots with different framings (a macro on a few keys, a low-angle three-quarter hero with one slow move, a use context or profile), lit with a cool rim light and one accent, no rainbow or RGB, no screen or cursor, hands at most once and from a low side angle; the whole keyboard is never shown sharp with all legends readable; product described once with the \"青\" badge; must_show names something visible in a still."
   }
 ]

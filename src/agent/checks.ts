@@ -140,6 +140,26 @@ export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: 
     if (!shot.camera?.trim() || /\b(then|followed by)\b/i.test(shot.camera) || new Set(moves.map((m) => m.toLowerCase())).size > 1) problems.push(`${label}: camera must be exactly one move (found: ${shot.camera})`)
     if (!shot.must_show?.trim()) problems.push(`${label}: must_show is empty; the quality gate needs something visible to check`)
     if (spokenLength(shot.on_screen_text ?? '') > TEXT_MAX_CHARS) problems.push(`${label}: on_screen_text is longer than ${TEXT_MAX_CHARS} characters and will warp`)
+    // Screens, cursors and interfaces: image models invent gibberish UI and four attempts failed on "a cursor moving across a screen".
+    if (/\b(cursor|user interface|\bUI\b|on-screen|on screen|menu|dashboard)\b/i.test(`${shot.image_prompt} ${shot.must_show}`)) problems.push(`${label}: asks for screen or interface content (cursor, UI, on-screen); show the device, not what it displays`)
+  }
+  // Variety: neighbouring shots with the same framing and the same camera move read as one long shot (the keyboard film: three near-identical three-quarter views).
+  for (let index = 1; index < shots.length; index++) {
+    const a = shots[index - 1]!, b = shots[index]!
+    if (a.framing?.trim().toLowerCase() === b.framing?.trim().toLowerCase() && a.camera?.trim().toLowerCase() === b.camera?.trim().toLowerCase())
+      problems.push(`shot ${b.shot}: same framing and camera move as shot ${a.shot} (${b.framing}, ${b.camera}); change the framing between neighbours (macro -> medium -> wide)`)
+  }
+  if (shots.length >= 3 && new Set(shots.map((shot) => shot.framing?.trim().toLowerCase())).size === 1) problems.push(`all ${shots.length} shots use the same framing (${shots[0]!.framing}); a film needs at least two framings`)
+  // Electronics playbook, the rules the keyboard film broke.
+  if (brief && industryOf(brief.product) === 'electronics') {
+    const briefText = `${brief.product}`
+    for (const shot of shots) {
+      const label = `shot ${shot.shot}`
+      const text = `${shot.image_prompt} ${shot.video_prompt} ${storyboard.style}`
+      if (/rainbow|RGB|multicolou?r(ed)? (light|glow|backlight)/i.test(text) && !/rainbow|RGB|幻彩|炫彩|多彩/i.test(briefText)) problems.push(`${label}: rainbow or RGB lighting that the brief did not ask for; electronics are lit with one or two colours (rim light, a single accent)`)
+      if (/(top-down|overhead|bird'?s[- ]eye|from above)/i.test(text) && /\b(hand|hands|typing|fingers)\b/i.test(text)) problems.push(`${label}: hands typing seen from above look unnatural and warp; shoot hands from a low side angle with wrists in frame, or leave hands out`)
+      if (/\b(keyboard|keycaps?)\b/i.test(briefText + ' ' + text) && /\b(whole|entire|full|complete) keyboard\b|all (the )?keys/i.test(shot.image_prompt) && !/bokeh|out of focus|shallow|blur/i.test(shot.image_prompt)) problems.push(`${label}: a whole keyboard in sharp focus shows dozens of tiny legends that the model garbles; go macro on a few keys, or keep the legends out of focus`)
+    }
   }
   return problems
 }
@@ -147,6 +167,29 @@ export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: 
 /** Lens specs and other short numeric tokens get painted into the image as text ("50mm" appeared as a caption), so drop them. */
 export const sanitizeStyle = (style: string) =>
   style.replace(/\b\d+(\.\d+)?\s?mm\b/gi, '').replace(/\bf\/?\d+(\.\d+)?\b/gi, '').replace(/\b\d+k\b/gi, '').replace(/\s*,\s*(?=,|$)/g, '').replace(/^\s*,\s*/, '').replace(/\s{2,}/g, ' ').trim()
+
+export type Industry = 'electronics' | 'drink' | 'skincare' | 'food' | 'general'
+
+/** A rough industry read of the brief's product, used for category playbooks in checks and prompts. */
+export function industryOf(text: string): Industry {
+  if (/keyboard|mouse|headphone|earbud|earphone|phone|laptop|tablet|camera|smartwatch|watch|speaker|charger|monitor|console|键盘|鼠标|耳机|手机|笔记本|平板|相机|手表|音箱|充电|显示器|电脑/i.test(text)) return 'electronics'
+  if (/\bcans?\b|bottle|soda|drink|beverage|water|beer|cola|tea|coffee|juice|milk|饮|汽水|气泡|啤酒|可乐|茶|咖啡|果汁|奶/i.test(text)) return 'drink'
+  if (/cream|serum|lotion|skincare|cosmetic|lipstick|面霜|精华|乳液|护肤|口红|化妆/i.test(text)) return 'skincare'
+  if (/snack|chocolate|biscuit|cake|noodle|rice|sauce|零食|巧克力|饼干|蛋糕|面|米|酱/i.test(text)) return 'food'
+  return 'general'
+}
+
+/**
+ * Category anchors appended to every frame prompt. They encode how each kind of product is shot
+ * in real commercials, so the storyboard agent's scene sits on a professional base.
+ */
+const INDUSTRY_ANCHOR: Record<Industry, string> = {
+  electronics: 'Consumer electronics commercial photography: dark studio, cool rim light along the edges, a subtle gradient light sweep on the surface, reflective black tabletop, shallow depth of field so any small printed legends fall softly out of focus, no rainbow lighting',
+  drink: 'Beverage commercial photography: backlit, crisp condensation, clean highlights, shallow depth of field',
+  skincare: 'Skincare commercial photography: soft diffused light, clean pale surfaces, gentle highlights, shallow depth of field',
+  food: 'Food commercial photography: warm directional light, appetising texture, shallow depth of field',
+  general: 'Commercial product photography: controlled studio light, clean composition, shallow depth of field',
+}
 
 const NO_TEXT = 'No captions, no subtitles, no slogans, no watermark, no numbers and no lettering anywhere except the label printed on the product itself'
 
@@ -159,10 +202,10 @@ export function composeProductPrompt(storyboard: Storyboard): string {
  * Product, no-text rule and style are appended by code, not by the model, so every shot
  * carries them verbatim. `withReference` is set when the frame is generated from the hero still.
  */
-export function composeImagePrompt(shot: Shot, storyboard: Storyboard, withReference = false): string {
+export function composeImagePrompt(shot: Shot, storyboard: Storyboard, withReference = false, industry: Industry = 'general'): string {
   const scene = shot.image_prompt.trim().replace(/[.。]$/, '')
   const product = withReference
     ? 'Image 1 is the product: keep its shape, proportions, colours, material and label exactly as in image 1'
     : `The product: ${storyboard.product.trim().replace(/[.。]$/, '')}`
-  return `${scene}. ${product}. ${NO_TEXT}. ${sanitizeStyle(storyboard.style)}`
+  return `${scene}. ${product}. ${NO_TEXT}. ${INDUSTRY_ANCHOR[industry]}. ${sanitizeStyle(storyboard.style)}`
 }

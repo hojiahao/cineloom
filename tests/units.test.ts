@@ -211,3 +211,31 @@ describe('title matches the product form', () => {
     expect(checkScript({ structure: 's', beats: beats('晨光') }, brief('挂耳咖啡'))).toEqual([])
   })
 })
+
+import { industryOf } from '../src/agent/checks.js'
+
+describe('category playbooks in the storyboard check', () => {
+  const script3 = { structure: 's', beats: [1, 2, 3].map((beat) => ({ beat, job: 'hook', see: 'x', vo: '键帽回弹，指尖有数', text: '青轴' })) }
+  const shot = (n: number, extra: Partial<Record<string, string>> = {}) => ({ shot: n, seconds: 5, framing: ['macro', 'medium', 'wide'][n - 1]!, camera: ['slow push-in', 'slow orbit', 'slow pull-back'][n - 1]!, image_prompt: 'the product on a dark reflective table, cool rim light', video_prompt: 'light sweeps across the keys. No people and no hands enter the frame', on_screen_text: '', must_show: 'the product on the table', ...extra })
+  const keyboard = { brandText: '青', product: 'mechanical keyboard' }
+  const board = (shots: any[]) => ({ style: 'dark studio, cool tones', product: 'a deep grey aluminium mechanical keyboard with a small "青" badge', shots })
+  it('reads the industry from the product', () => {
+    expect(industryOf('mechanical keyboard')).toBe('electronics')
+    expect(industryOf('挂耳咖啡')).toBe('drink')
+    expect(industryOf('保湿面霜')).toBe('skincare')
+  })
+  it('accepts a varied electronics storyboard', () => {
+    expect(checkStoryboard(board([shot(1), shot(2), shot(3)]), script3, keyboard)).toEqual([])
+  })
+  it('rejects rainbow lighting the brief did not ask for, hands typing from above, and screen content', () => {
+    const problems = checkStoryboard(board([shot(1, { image_prompt: 'the product with rainbow RGB underglow' }), shot(2, { image_prompt: 'top-down view of hands typing on the product' }), shot(3, { must_show: 'a cursor moving on the screen' })]), script3, keyboard)
+    expect(problems.some((p) => /rainbow/.test(p))).toBe(true)
+    expect(problems.some((p) => /from above/.test(p))).toBe(true)
+    expect(problems.some((p) => /screen or interface/.test(p))).toBe(true)
+  })
+  it('rejects neighbouring shots with the same framing and camera move', () => {
+    const problems = checkStoryboard(board([shot(1), shot(2, { framing: 'macro', camera: 'slow push-in' }), shot(3)]), script3, keyboard)
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/same framing and camera move/)
+  })
+})

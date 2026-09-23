@@ -49,6 +49,7 @@ three seconds and spend the rest proving it.
 - The product is visible in at least two beats, and in the last one.
 - Claims come from the brief's proof points. No superlatives, no guarantees, no numbers without a source, and no body or health effects for food and drink ("提神醒脑", "解暑降火") - these fail compliance and cost a rewrite. Describe the experience (taste, feel, moment), not an effect.
 - Match the register to the category: a drink is tasted, a cream is felt, a device is used. Borrowing another category's vocabulary ("肌肤燥热" for a soda) reads as wrong even when every rule passes.
+- Electronics copy is about feel, sound and craft in concrete words - 回弹、触感、声音、材质、做工 - one sensation per beat ("指尖落下，青轴一声清响"), not abstractions strung together ("流畅如风，指尖连接创意" says nothing a viewer can feel).
 - The film ends on an end card with the brand and the single message, so the last beat should hand over to it rather than repeat it.
 - Voiceover sounds like a person talking, not a slogan list. Read it aloud once.
 - Voiceover is Chinese only; a stray English word ("唤醒 mornings") is a defect and is rejected. Only the brand text may be non-Chinese.

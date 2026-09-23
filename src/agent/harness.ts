@@ -3,10 +3,10 @@ import { join } from 'node:path'
 import { ComfyClient } from '../comfy/client.js'
 import { scanCopy } from '../lib/compliance.js'
 import { probeDuration } from '../lib/ffmpeg.js'
-import { generateImage, generateVideo, type VideoModel } from '../lib/media.js'
+import { generateImage, generateVideo, videoSize, type VideoModel } from '../lib/media.js'
 import { memoryStatus } from '../lib/memory.js'
 import { addAsset, createProject, projectDir, setStage, type Stage } from '../lib/project.js'
-import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
+import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, industryOf, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
 import { writeDeliveryReport } from './delivery.js'
 import { enterPhase, finishFilm } from './finish.js'
 import { qualityGate, type QaVerdict } from './gate.js'
@@ -32,6 +32,8 @@ export interface HarnessOptions {
   silent?: boolean
   /** Frames generated per shot before the gate picks one. */
   candidates?: number
+  /** Generate every candidate even after one passed, and keep the best score. Default: stop at the first pass. */
+  bestOf?: boolean
   log?: (line: string) => void
 }
 
@@ -44,7 +46,8 @@ export interface HarnessResult {
   wallSeconds: number
 }
 
-const FRAME_SIZE: Record<string, string> = { '9:16': '1080x1920', '16:9': '1920x1080', '1:1': '1328x1328' }
+/** Frames are generated at the video model's working size: the clip is made at that size, so a larger still only costs time (1920x1080 took 77 s a frame; 1280x704 about half). */
+const frameSize = (resolution: string, ratio: string) => videoSize(resolution, ratio).join('x')
 const MAX_QA_REGENERATIONS = 2
 
 /**
@@ -243,14 +246,14 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   await enterPhase(comfy, 'frames (Qwen-Image-Edit)', record)
   const frames = new Map<number, string>()
   for (const shot of storyboard.shots) {
-    let prompt = composeImagePrompt(shot, storyboard, true)
+    let prompt = composeImagePrompt(shot, storyboard, true, industryOf(brief.product))
     let best: { path: string; verdict: QaVerdict } | undefined
     const consider = (path: string, verdict: QaVerdict) => {
       if (!best || (verdict.pass && !best.verdict.pass) || (verdict.pass === best.verdict.pass && verdict.score > best.verdict.score)) best = { path, verdict }
     }
     const shoot = async (suffix: string, attempt: number) => {
       const path = join(dir, 'frames', `shot_${String(shot.shot).padStart(3, '0')}${suffix}.png`)
-      const image = await generateImage(comfy, { prompt, size: FRAME_SIZE[brief.ratio]!, output: path, references: [hero!.path] })
+      const image = await generateImage(comfy, { prompt, size: frameSize(options.resolution ?? '720p', brief.ratio), output: path, references: [hero!.path] })
       const verdict = await qualityGate(reviewer, path, shot, hero!.path)
       log(`▸ frame ${shot.shot}${suffix.padEnd(5)} ${image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
       await record('qa', 'quality-gate', reviewer, { shot: shot.shot, attempt, candidate: suffix || '_a', imageSeconds: image.seconds, ...verdict })
@@ -258,8 +261,13 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
     }
     // Best of N: the same prompt with different seeds. A diffusion model's spread between
     // seeds is often larger than what a prompt edit buys, and the gate can rank the results.
+    // By default the next seed is only spent when the previous one failed the gate (a frame that
+    // passed is a frame); `bestOf` generates every candidate and keeps the highest score.
     const candidates = Math.max(1, options.candidates ?? 2)
-    for (let index = 0; index < candidates; index++) await shoot(index === 0 ? '' : `_c${index + 1}`, 0)
+    for (let index = 0; index < candidates; index++) {
+      if (index > 0 && !options.bestOf && best?.verdict.pass) break
+      await shoot(index === 0 ? '' : `_c${index + 1}`, 0)
+    }
     for (let attempt = 1; attempt <= MAX_QA_REGENERATIONS && !best!.verdict.pass; attempt++) {
       result.qaRegenerations++
       prompt = await repairPrompt(planner, await agentPrompt('storyboard artist', 'shot-quality-gate'), shot, prompt, best!.verdict.issues)
