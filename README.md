@@ -1,5 +1,3 @@
-
-https://github.com/user-attachments/assets/fa45ee69-7e21-4759-b707-3658eef411f0
 <p align="center">
   <img src="docs/assets/banner.svg" alt="CineLoom 影织" width="860">
 </p>
