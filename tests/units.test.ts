@@ -233,10 +233,17 @@ describe('category playbooks in the storyboard check', () => {
     expect(problems.some((p) => /from above/.test(p))).toBe(true)
     expect(problems.some((p) => /screen or interface/.test(p))).toBe(true)
   })
-  it('rejects neighbouring shots with the same framing and camera move', () => {
-    const problems = checkStoryboard(board([shot(1), shot(2, { framing: 'macro', camera: 'slow push-in' }), shot(3)]), script3, keyboard)
+  it('rejects two shots with the same framing and camera move, wherever they sit', () => {
+    const problems = checkStoryboard(board([shot(1), shot(2), shot(3, { framing: 'macro', camera: 'slow push-in' })]), script3, keyboard)
     expect(problems).toHaveLength(1)
     expect(problems[0]).toMatch(/same framing and camera move/)
+  })
+  it('rejects hands in more than one shot, motion in must_show, and a Chinese style line', () => {
+    const problems = checkStoryboard({ ...board([shot(1, { image_prompt: 'a finger presses a key, no people' }), shot(2, { image_prompt: 'hands typing from a low side angle' }), shot(3, { must_show: 'keys glowing row by row' })]), style: '暗调，冷色' }, script3, keyboard)
+    expect(problems.some((p) => /hands or fingers appear in 2 shots/.test(p))).toBe(true)
+    expect(problems.some((p) => /decide one/.test(p))).toBe(true)
+    expect(problems.some((p) => /describes motion/.test(p))).toBe(true)
+    expect(problems.some((p) => /style must be in English/.test(p))).toBe(true)
   })
 })
 

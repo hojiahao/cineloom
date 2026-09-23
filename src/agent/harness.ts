@@ -7,7 +7,7 @@ import { generateImage, generateVideo, videoSize, type VideoModel } from '../lib
 import { sleepService, wakeService } from '../lib/rest.js'
 import { memoryStatus } from '../lib/memory.js'
 import { addAsset, createProject, projectDir, setStage, type Stage } from '../lib/project.js'
-import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, industryOf, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
+import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, composeVideoPrompt, industryOf, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
 import { writeDeliveryReport } from './delivery.js'
 import { enterPhase, finishFilm } from './finish.js'
 import { qualityGate, type QaVerdict } from './gate.js'
@@ -230,7 +230,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   await mkdir(join(dir, 'refs'), { recursive: true })
   const heroShot: Shot = { shot: 0, seconds: 0, framing: 'product', camera: 'static', image_prompt: '', video_prompt: '', on_screen_text: '', must_show: `exactly one ${brief.product}, fully visible and centred, matching this description: ${storyboard.product}. Its brand lettering reads "${brief.brandText}" clearly and correctly. Finish, proportions and size are not judged here` }
   let hero: { path: string; verdict: QaVerdict } | undefined
-  let heroPrompt = composeProductPrompt(storyboard)
+  let heroPrompt = composeProductPrompt(storyboard, industryOf(brief.product))
   for (let attempt = 0; attempt <= MAX_QA_REGENERATIONS; attempt++) {
     const path = join(dir, 'refs', `product${attempt ? `_r${attempt}` : ''}.png`)
     const image = await generateImage(comfy, { prompt: heroPrompt, size: '1328x1328', output: path })
@@ -298,7 +298,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   for (const [index, shot] of storyboard.shots.entries()) {
     const output = join(dir, 'clips', `shot_${String(shot.shot).padStart(3, '0')}.mp4`)
     const clip = await generateVideo(comfy, {
-      prompt: shot.video_prompt, output, resolution: options.resolution ?? '720p', ratio: brief.ratio, durationSeconds: shot.seconds || 5,
+      prompt: composeVideoPrompt(shot, industryOf(brief.product)), output, resolution: options.resolution ?? '720p', ratio: brief.ratio, durationSeconds: shot.seconds || 5,
       firstFrame: frames.get(shot.shot), freeAfter: index === storyboard.shots.length - 1, model: options.videoModel ?? 'wan22-14b',
     })
     log(`▸ clip ${shot.shot}       ${clip.seconds.toFixed(1)}s`)

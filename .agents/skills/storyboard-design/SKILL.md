@@ -42,8 +42,8 @@ switch, a hinge, a port - with a light sweep; (2) low-angle three-quarter hero w
 and the backlight travelling across the product; (3) the product in a use context or in profile, then the
 end card. Small printed legends (keycap letters, port labels) are where image models fail: go macro on a
 few of them, or keep the whole product at a shallow depth of field so they fall out of focus; a whole
-keyboard in sharp focus is rejected (*checked*). Hands only from a low side angle with the wrists in
-frame, never from above (*checked*), and never as the subject. No screens, cursors or interfaces
+keyboard in sharp focus is rejected (*checked*). Hands in at most one shot (*checked*), only from a low side angle with the wrists in
+frame, never from above (*checked*), and never as the subject; a shot that asks for a finger and also says "no hands" is rejected (*checked*). No screens, cursors or interfaces
 (*checked*). Motion vocabulary for `video_prompt`: light sweeping across the keys row by row, a slow
 ten-degree orbit, a rack focus from the badge to the keys, dust motes in the rim light.
 
@@ -97,4 +97,7 @@ is rejected by the validator before anything is generated.
 - A shot that depends on something the models cannot draw reliably (a cursor moving across a screen, a specific UI): four attempts failed on it. Keep shots physical: product, hands-free material, light, liquid, texture.
 - A shot built around a screen, a display or UI: image models invent gibberish interfaces and the gate rejects them. Show the device, not what it shows.
 - A keyboard shown whole and sharp: sixty tiny legends, all of them garbled, and a "青" badge that landed on the space bar. Macro on a few keys, or shallow depth of field.
+- A hand in every shot (a finger pressing a key three times): the film is about the hand, not the keyboard, and the model changed the product under it. One hand shot at most.
+- must_show written as motion ("keys glowing row by row"): the gate looks at one still and rejects every candidate. Name what one picture shows.
+- Two macro push-ins on a pressed key, one at each end of the film: same framing and move twice is rejected wherever the two shots sit.
 - Rainbow RGB underglow nobody asked for: it reads as cheap on a product that was briefed as cool-toned rim light. Light with one or two colours.

@@ -143,12 +143,20 @@ export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: 
     // Screens, cursors and interfaces: image models invent gibberish UI and four attempts failed on "a cursor moving across a screen".
     if (/\b(cursor|user interface|\bUI\b|on-screen|on screen|menu|dashboard)\b/i.test(`${shot.image_prompt} ${shot.must_show}`)) problems.push(`${label}: asks for screen or interface content (cursor, UI, on-screen); show the device, not what it displays`)
   }
-  // Variety: neighbouring shots with the same framing and the same camera move read as one long shot (the keyboard film: three near-identical three-quarter views).
-  for (let index = 1; index < shots.length; index++) {
-    const a = shots[index - 1]!, b = shots[index]!
+  if (storyboard.style?.trim() && CJK.test(storyboard.style)) problems.push('style must be in English: it is appended to every image prompt')
+  // Variety: two shots with the same framing and the same camera move read as one long shot (the keyboard film: three near-identical three-quarter views; then two macro push-ins on a pressed key).
+  for (let index = 1; index < shots.length; index++) for (let earlier = 0; earlier < index; earlier++) {
+    const a = shots[earlier]!, b = shots[index]!
     if (a.framing?.trim().toLowerCase() === b.framing?.trim().toLowerCase() && a.camera?.trim().toLowerCase() === b.camera?.trim().toLowerCase())
-      problems.push(`shot ${b.shot}: same framing and camera move as shot ${a.shot} (${b.framing}, ${b.camera}); change the framing between neighbours (macro -> medium -> wide)`)
+      problems.push(`shot ${b.shot}: same framing and camera move as shot ${a.shot} (${b.framing}, ${b.camera}); give each shot its own framing and move (macro push-in, medium orbit, wide pull-back)`)
   }
+  for (const shot of shots) {
+    if (/\b(row by row|gradually|slowly|moving|moves|rising|swirling|flowing|sweeping|lights up|turns on)\b/i.test(shot.must_show ?? '')) problems.push(`shot ${shot.shot}: must_show describes motion ("${shot.must_show}"); the gate sees one still frame, so name what is visible in a single picture`)
+  }
+  const HANDS = /\b(hand|hands|finger|fingers|typing|presses|pressing)\b/i
+  const withHands = shots.filter((shot) => HANDS.test(`${shot.image_prompt} ${shot.must_show}`))
+  if (withHands.length > 1) problems.push(`hands or fingers appear in ${withHands.length} shots (${withHands.map((shot) => shot.shot).join(', ')}); at most one shot may include a hand, and the product alone carries the rest`)
+  for (const shot of withHands) if (/no people|no hands|hands-free/i.test(shot.image_prompt)) problems.push(`shot ${shot.shot}: asks for a finger or hand and also says "no people/no hands"; decide one`)
   if (shots.length >= 3 && new Set(shots.map((shot) => shot.framing?.trim().toLowerCase())).size === 1) problems.push(`all ${shots.length} shots use the same framing (${shots[0]!.framing}); a film needs at least two framings`)
   // Electronics playbook, the rules the keyboard film broke.
   if (brief && industryOf(brief.product) === 'electronics') {
@@ -194,8 +202,25 @@ const INDUSTRY_ANCHOR: Record<Industry, string> = {
 const NO_TEXT = 'No captions, no subtitles, no slogans, no watermark, no numbers and no lettering anywhere except the label printed on the product itself'
 
 /** The hero still that every shot is anchored to. */
-export function composeProductPrompt(storyboard: Storyboard): string {
-  return `Studio product photograph of ${storyboard.product.trim().replace(/[.。]$/, '')}. The product stands upright, centred, fully visible, on a seamless neutral backdrop with soft even light. ${NO_TEXT}. ${sanitizeStyle(storyboard.style)}`
+export function composeProductPrompt(storyboard: Storyboard, industry: Industry = 'general'): string {
+  // "Stands upright" is right for a can and wrong for a keyboard: the hero once showed a keyboard on its end, and the end card inherited it.
+  const pose = industry === 'electronics'
+    ? 'The product rests flat in its natural working position, seen from a slightly elevated three-quarter angle, centred and fully visible, on a seamless dark backdrop with a cool rim light'
+    : 'The product stands upright, centred, fully visible, on a seamless neutral backdrop with soft even light'
+  return `Studio product photograph of ${storyboard.product.trim().replace(/[.。]$/, '')}. ${pose}. ${NO_TEXT}. ${sanitizeStyle(storyboard.style)}`
+}
+
+/** Motion rules appended to every clip prompt by industry: what the video model drifts into on its own. */
+const VIDEO_ANCHOR: Record<Industry, string> = {
+  electronics: 'The lighting keeps its one cool colour for the whole clip: no colour cycling, no rainbow, no flashing. The product stays exactly where it is',
+  drink: 'The container keeps its shape and label; liquid and light move, the product does not deform',
+  skincare: 'Slow and quiet; the jar keeps its shape and label',
+  food: 'Steam and light move; the pack keeps its shape and print',
+  general: 'The product keeps its shape, colours and label for the whole clip',
+}
+
+export function composeVideoPrompt(shot: Shot, industry: Industry = 'general'): string {
+  return `${shot.video_prompt.trim().replace(/[.。]$/, '')}. ${VIDEO_ANCHOR[industry]}`
 }
 
 /**
