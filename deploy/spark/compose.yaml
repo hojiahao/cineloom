@@ -33,8 +33,6 @@ services:
     environment:
       HF_HOME: /models/hf
       HF_HUB_OFFLINE: "1"
-      # The sleep/wake endpoints used by src/lib/rest.ts are behind vLLM's dev-mode switch.
-      VLLM_SERVER_DEV_MODE: "1"
     volumes:
       - ${SPARK_MODEL_DIR:-/home/orion/models}:/models
     command:
@@ -46,8 +44,6 @@ services:
       - --kv-cache-dtype=fp8
       - --enable-prefix-caching
       - --gpu-memory-utilization=${NEMOTRON_GPU_MEM:-0.25}
-      # Lets the harness release this service's memory while the diffusion models run (src/lib/rest.ts).
-      - --enable-sleep-mode
       - --max-model-len=${NEMOTRON_MAX_LEN:-65536}
       - --mamba-backend=flashinfer
       - --mamba-cache-mode=align
@@ -66,8 +62,6 @@ services:
     environment:
       HF_HOME: /models/hf
       HF_HUB_OFFLINE: "1"
-      # The sleep/wake endpoints used by src/lib/rest.ts are behind vLLM's dev-mode switch.
-      VLLM_SERVER_DEV_MODE: "1"
       # DeepGEMM's FP8 kernels assert on GB10 ("Unknown SF transformation"); use vLLM's generic FP8 path.
       VLLM_USE_DEEP_GEMM: "0"
     volumes:
@@ -79,7 +73,6 @@ services:
       - --port=8000
       - --trust-remote-code
       - --gpu-memory-utilization=${STEPVL_GPU_MEM:-0.20}
-      - --enable-sleep-mode
       - --max-model-len=${STEPVL_MAX_LEN:-32768}
       - --limit-mm-per-prompt={"image":12}
       - --reasoning-parser=deepseek_r1
