@@ -1,3 +1,5 @@
+
+https://github.com/user-attachments/assets/fa45ee69-7e21-4759-b707-3658eef411f0
 <p align="center">
   <img src="docs/assets/banner.svg" alt="CineLoom 影织" width="860">
 </p>
@@ -114,7 +116,7 @@ https://github.com/user-attachments/assets/417796a8-5f80-495c-9ec8-72c4bf01da8b
 
 <!-- video:cream-9x16 -->
 
-<p align="center"><a href="docs/showcase/cream-9x16-framed.mp4"><img src="docs/showcase/cream-9x16-poster.jpg" alt="保湿面霜“润”成片，点击播放" width="880"></a></p>
+https://github.com/user-attachments/assets/75d58be9-b411-43e6-86cd-f8a1a04694ea
 
 <details>
 <summary>规格、创意原话、四格画面、定妆图与这次运行的记录</summary>
@@ -142,7 +144,7 @@ https://github.com/user-attachments/assets/417796a8-5f80-495c-9ec8-72c4bf01da8b
 
 <!-- video:coffee-16x9 -->
 
-<p align="center"><a href="docs/showcase/coffee-16x9.mp4"><img src="docs/showcase/coffee-16x9-poster.jpg" alt="挂耳咖啡“醒”成片，点击播放" width="880"></a></p>
+https://github.com/user-attachments/assets/765932f6-cdcc-4564-a5f8-996a543eea74
 
 <details>
 <summary>创意原话、四格画面、定妆图与这次运行的记录</summary>
