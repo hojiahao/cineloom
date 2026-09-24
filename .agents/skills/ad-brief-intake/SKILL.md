@@ -50,3 +50,7 @@ then open the project so every later stage has one source of truth.
 
 - Record only claims the user can back up under "proof points". Anything else is a wish, and the script must not state it as fact.
 - If the user says the product is unreleased or under NDA, write "local only" under delivery route. That line is what later stages check.
+
+## The product's look
+
+When the request says what the product looks like ("银色铝罐，青绿色标签上有白色书法字“冷”"), copy it word for word into `appearance`. It is the client's decision, not the studio's: a storyboard that turns the can into a glass bottle is rejected against this field.

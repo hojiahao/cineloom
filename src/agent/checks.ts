@@ -16,6 +16,8 @@ export interface Brief {
   durationSeconds: number
   tone: string
   brandText: string
+  /** The product's look in the user's own words (container, material, colours, label), verbatim from the request. */
+  appearance?: string
 }
 
 export interface Beat {
@@ -118,13 +120,24 @@ export function checkScript(script: Script, brief: Brief): string[] {
   return problems
 }
 
-export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: Pick<Brief, 'brandText' | 'product'>): string[] {
+export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: Pick<Brief, 'brandText' | 'product' | 'appearance'>): string[] {
   const problems: string[] = []
   const shots = Array.isArray(storyboard.shots) ? storyboard.shots : []
   if (!storyboard.style?.trim()) problems.push('style line is missing')
   if (!storyboard.product?.trim()) problems.push('product description is missing: describe container type, material, colours and label once')
   // The hero still is generated from this sentence. A copied example (a soda can for a face cream) went unnoticed once.
   else if (brief?.brandText && !storyboard.product.includes(brief.brandText)) problems.push(`product must describe THIS brief's product (${brief.product}) with the label text "${brief.brandText}" in quotes; it does not mention "${brief.brandText}"`)
+  // The user said what the product looks like; the storyboard may not change the container (a silver can became a glass bottle).
+  if (storyboard.product?.trim() && brief?.appearance) {
+    const said = brief.appearance, wrote = storyboard.product
+    const forms: Array<[RegExp, RegExp, string]> = [
+      [/罐|\bcans?\b/i, /\bcans?\b|\btin\b/i, 'a can'], [/瓶|bottle/i, /bottle/i, 'a bottle'], [/盒|\bbox\b|carton/i, /\bbox\b|carton|pack/i, 'a box'],
+      [/袋|bag|pouch|sachet/i, /bag|pouch|sachet|packet/i, 'a bag'], [/管|\btube\b/i, /\btube\b/i, 'a tube'], [/杯|\bcup\b/i, /\bcup\b/i, 'a cup'],
+    ]
+    for (const [inRequest, inProduct, name] of forms) if (inRequest.test(said) && !inProduct.test(wrote)) problems.push(`product must be ${name}, as the request says ("${said}"); the storyboard describes something else`)
+    if (/铝|aluminium|aluminum/i.test(said) && /glass|plastic/i.test(wrote)) problems.push(`product is aluminium in the request ("${said}"), not glass or plastic`)
+  }
+  if (/\bin quotes\b/i.test(storyboard.product ?? '')) problems.push('product contains the words "in quotes" copied from the template; write the label text itself inside the quotes and nothing about quoting')
   // The product line is painted into the hero still. Chinese outside the quoted label text ("无糖气泡水, container: ...") ends up printed on the can, garbled.
   if (storyboard.product?.trim() && CJK.test(storyboard.product.replace(/"[^"]*"|“[^”]*”/g, ''))) problems.push('product must be in English except the label text inside quotes: any other Chinese in it gets painted onto the product')
   if (storyboard.product?.trim() && brief && /\b(aluminium|aluminum|tin|soda|drink|beverage)?\s*cans?\b|气泡水|易拉罐/i.test(storyboard.product) && !/\bcan\b|aluminium|气泡|饮料|汽水|可乐|啤酒|soda|drink|beverage|water|beer|cola|tea|coffee|juice/i.test(brief.product)) problems.push('product describes a drink can but the brief is not for a canned drink; describe the actual product from the brief')
@@ -204,12 +217,12 @@ const INDUSTRY_ANCHOR: Record<Industry, string> = {
 const NO_TEXT = 'No captions, no subtitles, no slogans, no watermark, no numbers and no lettering anywhere except the label printed on the product itself'
 
 /** The hero still that every shot is anchored to. */
-export function composeProductPrompt(storyboard: Storyboard, industry: Industry = 'general'): string {
+export function composeProductPrompt(storyboard: Storyboard, industry: Industry = 'general', brandText?: string): string {
   // "Stands upright" is right for a can and wrong for a keyboard: the hero once showed a keyboard on its end, and the end card inherited it.
   const pose = industry === 'electronics'
     ? 'The product rests flat in its natural working position, seen from a slightly elevated three-quarter angle, centred and fully visible, on a seamless dark backdrop with a cool rim light. Apart from its one small badge it carries no other words, logos or brand names anywhere'
     : 'The product stands upright, centred, fully visible, on a seamless neutral backdrop with soft even light'
-  return `Studio product photograph of ${storyboard.product.trim().replace(/[.。]$/, '')}. ${pose}. ${NO_TEXT}. ${sanitizeStyle(storyboard.style)}`
+  return `Studio product photograph of ${storyboard.product.trim().replace(/[.。]$/, '')}. ${pose}. ${brandText ? `The only lettering anywhere in the picture is the label "${brandText}", written once, exactly like that, with no other words, slogans, claims or quotation marks. ` : ''}${NO_TEXT}. ${sanitizeStyle(storyboard.style)}`
 }
 
 /** Motion rules appended to every clip prompt by industry: what the video model drifts into on its own. */

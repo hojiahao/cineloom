@@ -269,3 +269,18 @@ describe('the product line is painted into the hero still', () => {
     expect(checkStoryboard({ style: 's', product: 'a tall slim matte white can whose label reads "冷" in blue', shots: [shot] }, script1, { brandText: '冷', product: 'sugar-free sparkling water' })).toEqual([])
   })
 })
+
+describe('the request decides what the product looks like', () => {
+  const script1 = { structure: 's', beats: [{ beat: 1, job: 'hook', see: 'x', vo: '一口下去，气泡在舌尖炸开', text: '气泡感' }] }
+  const shot = { shot: 1, seconds: 5, framing: 'macro', camera: 'slow push-in', image_prompt: 'the product on crushed ice', video_prompt: 'mist drifts. No people and no hands enter the frame', on_screen_text: '', must_show: 'the product upright' }
+  const brief = { brandText: '冷', product: 'sugar-free sparkling water', appearance: '银色铝罐，青绿色标签上有白色书法字“冷”' }
+  it('rejects a bottle when the request said a can', () => {
+    const problems = checkStoryboard({ style: 's', product: 'a clear glass bottle whose label reads "冷"', shots: [shot] }, script1, brief)
+    expect(problems.some((p) => /must be a can/.test(p))).toBe(true)
+    expect(problems.some((p) => /aluminium in the request/.test(p))).toBe(true)
+    expect(checkStoryboard({ style: 's', product: 'a slim silver aluminium can with a teal label that reads "冷" in white brush script', shots: [shot] }, script1, brief)).toEqual([])
+  })
+  it('rejects the template words "in quotes"', () => {
+    expect(checkStoryboard({ style: 's', product: 'a silver aluminium can, label text "冷" in quotes', shots: [shot] }, script1, brief)).toHaveLength(1)
+  })
+})

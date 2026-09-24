@@ -83,7 +83,8 @@ ${options.ratio ? `The user fixed the aspect ratio: ${options.ratio}.` : ''}${op
 Return JSON only:
 {"id": "lowercase-dashed-project-id", "title": "short Chinese title", "product": "what is being advertised", "category": "general|food|health_food|cosmetics|medical",
  "audience": "...", "message": "the one thing the viewer should remember, in Chinese", "ratio": "9:16|16:9|1:1", "durationSeconds": 15,
- "tone": "tone and visual style in English", "brandText": "the brand name as it should appear on the product, at most 4 common characters"}`,
+ "tone": "tone and visual style in English", "brandText": "the brand name as it should appear on the product, at most 4 common characters",
+ "appearance": "the product's look copied word for word from the request (container, material, colours, label); empty if the request says nothing about it"}`,
     },
     checkBrief,
   )
@@ -232,7 +233,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   await mkdir(join(dir, 'refs'), { recursive: true })
   const heroShot: Shot = { shot: 0, seconds: 0, framing: 'product', camera: 'static', image_prompt: '', video_prompt: '', on_screen_text: '', must_show: `exactly one ${brief.product}, fully visible and centred, matching this description: ${storyboard.product}. Its brand lettering reads "${brief.brandText}" clearly and correctly. Finish, proportions and size are not judged here` }
   let hero: { path: string; verdict: QaVerdict } | undefined
-  let heroPrompt = composeProductPrompt(storyboard, industryOf(brief.product))
+  let heroPrompt = composeProductPrompt(storyboard, industryOf(brief.product), brief.brandText)
   for (let attempt = 0; attempt <= MAX_QA_REGENERATIONS; attempt++) {
     const path = join(dir, 'refs', `product${attempt ? `_r${attempt}` : ''}.png`)
     const image = await generateImage(comfy, { prompt: heroPrompt, size: '1328x1328', output: path })

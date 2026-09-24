@@ -7,7 +7,7 @@ Return JSON only: {"structure": "...", "beats": [{"beat": 1, "job": "hook|proof|
 
 export const storyboardUser = (brief: Brief, script: Script) => `Brief:\n${JSON.stringify(brief, null, 2)}\n\nApproved script:\n${JSON.stringify(script, null, 2)}
 
-No reference photos exist. The product label reads "${brief.brandText}".
+No reference photos exist. The product label reads "${brief.brandText}".${brief.appearance ? `\nThe product looks like this, in the client's words, and \`product\` must describe exactly that: ${brief.appearance}` : ''}
 Write EXACTLY ${script.beats.length} shots, numbered 1 to ${script.beats.length}, one per beat, in beat order.
 Return JSON only: {"style": "...", "product": "...", "shots": [{"shot": 1, "seconds": 5, "framing": "...", "camera": "...", "image_prompt": "...", "video_prompt": "...", "on_screen_text": "", "must_show": "..."}]}`
 
