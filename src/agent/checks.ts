@@ -108,6 +108,8 @@ export function checkScript(script: Script, brief: Brief): string[] {
       if (spokenLength(beat.vo) > VO_MAX_CHARS) problems.push(`${label}: voiceover has ${spokenLength(beat.vo)} characters; at most ${VO_MAX_CHARS} fit in 5 seconds`)
     }
     problems.push(...captionProblems(`${label} voiceover`, beat.vo ?? '', false), ...captionProblems(`${label} on-screen text`, beat.text ?? '', true))
+    // "一口咬下" for a sparkling water: a drink is sipped, not bitten.
+    if (industryOf(brief.product) === 'drink' && /咬|嚼/.test(beat.vo ?? '')) problems.push(`${label}: a drink is not bitten or chewed ("${beat.vo}"); write 喝 / 入口 / 一口`)
     if (spokenLength(beat.text ?? '') > TEXT_MAX_CHARS) problems.push(`${label}: on-screen text has ${spokenLength(beat.text)} characters; at most ${TEXT_MAX_CHARS}`)
     // "开罐" on a drip-bag coffee: the title of the skill's example was copied onto a product that has no can.
     const productText = `${brief.product} ${brief.message} ${brief.title}`
@@ -168,7 +170,7 @@ export function checkStoryboard(storyboard: Storyboard, script: Script, brief?: 
   for (const shot of shots) {
     if (/\b(row by row|gradually|slowly|moving|moves|rising|swirling|flowing|sweeping|lights up|turns on)\b/i.test(shot.must_show ?? '')) problems.push(`shot ${shot.shot}: must_show describes motion ("${shot.must_show}"); the gate sees one still frame, so name what is visible in a single picture`)
   }
-  const HANDS = /\b(hand|hands|finger|fingers|typing|presses|pressing)\b/i
+  const HANDS = /\b(hand|hands|finger|fingers|typing|typed|types|presses|pressing|pressed|in use|being used|holding|held|grips?|gripping)\b/i
   const withHands = shots.filter((shot) => HANDS.test(`${shot.image_prompt} ${shot.must_show}`))
   if (withHands.length > 1) problems.push(`hands or fingers appear in ${withHands.length} shots (${withHands.map((shot) => shot.shot).join(', ')}); at most one shot may include a hand, and the product alone carries the rest`)
   for (const shot of withHands) if (/no people|no hands|hands-free/i.test(shot.image_prompt)) problems.push(`shot ${shot.shot}: asks for a finger or hand and also says "no people/no hands"; decide one`)
