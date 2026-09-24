@@ -3,11 +3,11 @@ import { join } from 'node:path'
 import { ComfyClient } from '../comfy/client.js'
 import { scanCopy } from '../lib/compliance.js'
 import { probeDuration } from '../lib/ffmpeg.js'
-import { generateImage, generateVideo, videoSize, type VideoModel } from '../lib/media.js'
+import { generateImage, generateVideo, videoSize, VIDEO_NEGATIVE, type VideoModel } from '../lib/media.js'
 import { sleepService, wakeService } from '../lib/rest.js'
 import { memoryStatus } from '../lib/memory.js'
 import { addAsset, createProject, projectDir, setStage, type Stage } from '../lib/project.js'
-import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, composeVideoPrompt, industryOf, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
+import { checkBrief, checkScript, checkStoryboard, composeImagePrompt, composeProductPrompt, composeVideoNegative, composeVideoPrompt, industryOf, type Brief, type Script, type Shot, type Storyboard } from './checks.js'
 import { writeDeliveryReport } from './delivery.js'
 import { enterPhase, finishFilm } from './finish.js'
 import { qualityGate, type QaVerdict } from './gate.js'
@@ -236,7 +236,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   for (let attempt = 0; attempt <= MAX_QA_REGENERATIONS; attempt++) {
     const path = join(dir, 'refs', `product${attempt ? `_r${attempt}` : ''}.png`)
     const image = await generateImage(comfy, { prompt: heroPrompt, size: '1328x1328', output: path })
-    const verdict = await qualityGate(reviewer, path, heroShot)
+    const verdict = await qualityGate(reviewer, path, heroShot, undefined, industryOf(brief.product))
     log(`▸ product hero ${image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
     await record('frames', 'product-hero', reviewer, { attempt, imageSeconds: image.seconds, ...verdict })
     if (!hero || verdict.score > hero.verdict.score) hero = { path, verdict }
@@ -272,7 +272,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
       if (!best || (verdict.pass && !best.verdict.pass) || (verdict.pass === best.verdict.pass && verdict.score > best.verdict.score)) best = { path, verdict }
     }
     const judge = async (rendered: { path: string; image: { seconds: number } }, suffix: string, attempt: number) => {
-      const verdict = await qualityGate(reviewer, rendered.path, shot, hero!.path)
+      const verdict = await qualityGate(reviewer, rendered.path, shot, hero!.path, industryOf(brief.product))
       log(`▸ frame ${shot.shot}${suffix.padEnd(5)} ${rendered.image.seconds.toFixed(1)}s · gate ${verdict.pass ? 'pass' : 'reject'} ${verdict.score}${verdict.issues.length ? ` · ${verdict.issues[0]}` : ''}`)
       await record('qa', 'quality-gate', reviewer, { shot: shot.shot, attempt, candidate: suffix || '_a', imageSeconds: rendered.image.seconds, ...verdict })
       consider(rendered.path, verdict)
@@ -314,7 +314,7 @@ Line lengths are checked elsewhere; do not count characters. Return JSON only:
   for (const [index, shot] of storyboard.shots.entries()) {
     const output = join(dir, 'clips', `shot_${String(shot.shot).padStart(3, '0')}.mp4`)
     const clip = await generateVideo(comfy, {
-      prompt: composeVideoPrompt(shot, industryOf(brief.product)), output, resolution: options.resolution ?? '720p', ratio: brief.ratio, durationSeconds: shot.seconds || 5,
+      prompt: composeVideoPrompt(shot, industryOf(brief.product)), negative: composeVideoNegative(VIDEO_NEGATIVE, industryOf(brief.product)), output, resolution: options.resolution ?? '720p', ratio: brief.ratio, durationSeconds: shot.seconds || 5,
       firstFrame: frames.get(shot.shot), freeAfter: index === storyboard.shots.length - 1, model: options.videoModel ?? 'wan22-14b',
     })
     log(`▸ clip ${shot.shot}       ${clip.seconds.toFixed(1)}s`)

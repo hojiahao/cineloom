@@ -15,6 +15,8 @@ const VIDEO_MODELS: Record<Exclude<VideoModel, 'seedance'>, { fps: number; i2v: 
   'wan22-14b': { fps: 16, i2v: 'wan22_i2v_14b_4step' },
 }
 export const VIDEO_SEGMENT_SECONDS = 5
+/** What the video models drift into on their own; industry anchors extend it (src/agent/checks.ts). */
+export const VIDEO_NEGATIVE = 'blurry, overexposed, static frame, warped product, morphing label, changing text, subtitles, watermark, extra fingers, deformed hands, jitter, low quality'
 
 const VIDEO_SIZES: Record<string, [number, number]> = {
   '480p/16:9': [832, 480],
@@ -101,7 +103,7 @@ export async function generateImage(
 
 export async function generateVideo(
   comfy: ComfyClient,
-  request: { prompt: string; output: string; resolution: string; ratio: string; durationSeconds: number; firstFrame?: string; freeAfter?: boolean; model?: VideoModel },
+  request: { prompt: string; negative?: string; output: string; resolution: string; ratio: string; durationSeconds: number; firstFrame?: string; freeAfter?: boolean; model?: VideoModel },
 ): Promise<MediaResult> {
   const started = Date.now()
   const modelName = request.model ?? (process.env.CINELOOM_VIDEO_MODEL as VideoModel | undefined) ?? 'wan22-5b'
@@ -131,6 +133,7 @@ export async function generateVideo(
       height,
       // Wan expects 4n+1 frames.
       length: VIDEO_SEGMENT_SECONDS * model.fps + 1,
+      negative: request.negative ?? VIDEO_NEGATIVE,
       fps: model.fps,
       seed: seed(),
       filename_prefix: `cineloom/${Date.now()}_${index}`,

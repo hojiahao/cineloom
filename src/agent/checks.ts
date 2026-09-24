@@ -221,6 +221,16 @@ const VIDEO_ANCHOR: Record<Industry, string> = {
   general: 'The product keeps its shape, colours and label for the whole clip',
 }
 
+/** Negative prompt additions per industry: rainbow cycling and ghost duplicates are what Wan adds to a keyboard on its own. */
+const VIDEO_NEGATIVE_EXTRA: Record<Industry, string> = {
+  electronics: 'rainbow lighting, RGB colour cycling, colour changing light, multicoloured glow, flashing, duplicated product, ghost copy, transparent overlay, second keyboard',
+  drink: 'duplicated product, second can, melting label',
+  skincare: 'duplicated product, opening lid, spilling',
+  food: 'duplicated product',
+  general: 'duplicated product',
+}
+export const composeVideoNegative = (base: string, industry: Industry = 'general') => `${base}, ${VIDEO_NEGATIVE_EXTRA[industry]}`
+
 export function composeVideoPrompt(shot: Shot, industry: Industry = 'general'): string {
   return `${shot.video_prompt.trim().replace(/[.。]$/, '')}. ${VIDEO_ANCHOR[industry]}`
 }
