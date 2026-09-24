@@ -87,7 +87,7 @@ https://github.com/user-attachments/assets/495bebb6-a63a-409f-8290-4b5b3d02419a
 
 <!-- video:keyboard-16x9 -->
 
-<p align="center"><a href="docs/showcase/keyboard-16x9.mp4"><img src="docs/showcase/keyboard-16x9-poster.jpg" alt="机械键盘“青”成片，点击播放" width="880"></a></p>
+https://github.com/user-attachments/assets/4fc7c49e-2b62-447b-9dc5-388c5ae32f51
 
 <details>
 <summary>创意原话、四格画面、定妆图与这次运行的记录</summary>
