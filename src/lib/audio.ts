@@ -1,4 +1,5 @@
 import { copyFile, mkdir, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { ComfyClient } from '../comfy/client.js'
 import { loadWorkflow, renderWorkflow } from '../comfy/workflow.js'
@@ -68,7 +69,7 @@ export async function synthesizeVoices(lines: VoiceLine[]): Promise<VoiceResult[
     lines: lines.map((line, index) => ({ text: line.text, output: inside(join(jobDir, `vo_${index + 1}.wav`)) })) }
   await writeFile(join(jobDir, 'jobs.json'), JSON.stringify(jobs, null, 2))
   if (engine === 'qwen-tts') {
-    await exec('docker', ['run', '--rm', '--device', 'nvidia.com/gpu=all', '--ipc=host', '-v', `${resolve('.')}:/repo:ro`, '-v', `${resolve(process.env.CINELOOM_TTS_MODEL_DIR ?? '/home/orion/models/tts')}:/models:ro`, '-v', `${work}:/work`,
+    await exec('docker', ['run', '--rm', '--device', 'nvidia.com/gpu=all', '--ipc=host', '-v', `${resolve('.')}:/repo:ro`, '-v', `${resolve(process.env.CINELOOM_TTS_MODEL_DIR ?? join(process.env.SPARK_MODEL_DIR ?? join(homedir(), 'models'), 'tts'))}:/models:ro`, '-v', `${work}:/work`,
       process.env.CINELOOM_QWEN_TTS_IMAGE ?? 'cineloom/qwen-tts:local', '/repo/scripts/qwen-clone.py', '--model', '/models/Qwen3-TTS-12Hz-1.7B-Base', '--jobs', inside(join(jobDir, 'jobs.json'))])
   } else await exec('bash', [resolve(process.env.CINELOOM_STEP_AUDIO_SCRIPT ?? 'scripts/step-audio.sh'), 'batch', inside(join(jobDir, 'jobs.json'))])
   const results: VoiceResult[] = []

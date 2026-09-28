@@ -5,7 +5,7 @@
 # Paths given to the model must be inside /work (= runtime-data/step-audio) or /app/examples.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-HF=/home/orion/models/hf
+HF="${SPARK_MODEL_DIR:-$HOME/models}/hf"
 EDITX=/root/.cache/huggingface/hub/models--stepfun-ai--Step-Audio-EditX/snapshots/$(ls $HF/hub/models--stepfun-ai--Step-Audio-EditX/snapshots | head -1)
 TOK=/root/.cache/huggingface/hub/models--stepfun-ai--Step-Audio-Tokenizer/snapshots/$(ls $HF/hub/models--stepfun-ai--Step-Audio-Tokenizer/snapshots | head -1)
 mkdir -p runtime-data/step-audio

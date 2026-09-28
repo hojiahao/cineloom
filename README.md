@@ -31,21 +31,22 @@
 | 产品在镜头之间变样、画面里出现乱码字 | 每个镜头单独一段提示词，模型画字 | 先出一张过质检的**产品定妆图**，每帧都从它生成；画面里**不让模型画字**，标题字幕在后期用真字体排版 |
 | 生成结果没人把关，返工在最贵的环节 | 生成完再看 | **文案先过《广告法》扫描和独立审稿**才能进生成；**每帧先过视觉质检**（对照定妆图）才能生视频，把返工拦在 20 秒的生图阶段，而不是 6 分钟的生视频阶段 |
 
-**一次真实运行的记录**（2026 年 9 月 21 日，项目 `leng-soda-v2`，本机，未剪辑）：
+**一次真实运行的记录**（2026 年 9 月 28 日，在 Studio 工作台提交，本机运行，演示视频里的操作录屏就是这一次）：
 
 ```text
-> 给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天，清爽。
+> 给一款叫“冷”的无糖气泡水做一条 15 秒竖版短视频广告，面向大学生，夏天。电影质感：微距、冰、气泡、逆光，
+  节奏克制。产品是银色铝罐，青绿色标签上有白色书法字“冷”。
 
-  需求      1.3 s   立项：9:16 · 15 s · 品类 food · 仅本地
-  脚本      5.3 s   第 1 稿被校验器退回（口播过短），第 2 稿通过
-  合规      1.1 s   独立审稿智能体通过，用词扫描 0 项
-  分镜      4.3 s   3 个镜头 · 风格行 · 产品描述一次成型
-  定妆图            第 1 张被质检拒绝（标签侧面多余小字）→ 第 2 张 90 分通过
-  首帧 ×3          镜头 1、2 各被拒 1 次（罐子倾斜 / 品牌字不符）后通过；镜头 3 一次通过
-  视频 ×3          Wan2.2 14B · 355 / 365 / 358 s
-  成片             配音 ×3 + 音乐 9.1 s + 混音 + 调色 + 字幕 = 45 s
+  需求      1.4 s   立项：9:16 · 15 s · 品类 food · 外观按原话锁定为“银色铝罐、青绿色标签、白色书法字”
+  脚本      2.3 s   第 1 稿通过；Jev 判读“甘甜气泡填满口腔”有功效声称嫌疑（p = 0.58），交审稿裁决
+  合规     49.8 s   独立审稿智能体通过，用词扫描 0 项
+  分镜     51.5 s   第 1–4 稿被退回（产品写成了别的容器、一镜两个动作），第 5 稿通过
+  定妆图   42.1 s   第 1 张 100 分通过
+  首帧 ×3          镜头 1、2 各一次通过（90 / 100 分）；镜头 3 四个候选均未通过，保留最好的一张并写入交付报告
+  视频 ×3          Wan2.2 14B · 371 / 336 / 335 s
+  成片             设计音色配音 ×3 + 本地配乐 10.1 s + 混音 + 调色 + 字幕
   ────────────────────────────────────────────────
-  总计   2044 s    2 次重生成，全程 DGX Spark 本地，1080×1920 · 24 fps · 有声
+  总计   2495 s    全程 DGX Spark 本地，1080×1920 · 24 fps · 有声
 ```
 
 > 第三届 NVIDIA DGX Spark 黑客松 · Agent Skills 开发挑战赛参赛作品 · 方舟团队
@@ -183,7 +184,7 @@ https://github.com/user-attachments/assets/e726d094-b557-4999-8dcc-1f0d6348ff77
 
 CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专业判断写成 **Agent Skill**：
 
-- **一个导演，多个子智能体，九项技能。** `cineloom harness "一句创意"` 启动 **CineLoom Harness**——CineLoom 自己的智能体运行框架：八个阶段由代码保证顺序，每个阶段交给一个加载了对应 Skill 的子智能体（需求、文案、审稿、分镜、质检）。**代码管顺序和验收，模型管判断**——每份产出先过确定性校验，不合格就带着具体问题重写。
+- **一个导演，多个子智能体，十个 Skill。** `cineloom harness "一句创意"` 启动 **CineLoom Harness**——CineLoom 自己的智能体运行框架：八个阶段由代码保证顺序，每个阶段交给一个加载了对应 Skill 的子智能体（需求、文案、审稿、分镜、质检）。**代码管顺序和验收，模型管判断**——每份产出先过确定性校验，不合格就带着具体问题重写。
 - **先审后生成。** 文案先过《广告法》用词扫描（本地、可复现），再交给一个“没写这份稿”的审稿智能体；有 `block` 级问题的文案到不了生成环节。
 - **产品定妆图锁定一致性。** 先生成一张产品定妆图并过质检，之后每个镜头都从这张图出发生成。只靠文字描述时，产品会在镜头之间漂移（实测：镜头 1 是青色罐，镜头 3 变成了银色罐）。
 - **画面里不让模型画字。** 标题和字幕在后期用真字体排版。实测模型会把“气泡细腻”画两遍，把风格词里的“50mm”当成文字画进画面，把生僻字“泠”画成“冷”。
@@ -209,9 +210,9 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 ## 快速开始
 
 ```bash
-git clone git@github.com:hojiahao/cineloom.git && cd cineloom
+git clone https://github.com/hojiahao/cineloom.git && cd cineloom
 npm install && npm run build
-npm test                      # 34 个测试：工具链端到端与 CineLoom Harness 端到端
+npm test                      # 47 个测试：校验器、工具链与 CineLoom Harness 全流程
 
 node dist/cli.js studio       # 本机打开 http://127.0.0.1:3090 ，输入创意，点“开拍”
 node dist/cli.js harness "给一款叫“冷”的无糖气泡水做一条 15 秒竖版广告，面向大学生"   # 或者用命令行
@@ -238,6 +239,18 @@ scripts/spark-up.sh                                            # 起 Nemotron、
 三个服务就绪后，`cineloom harness` 和 Studio 就能用了。Harness 默认连本机的三个端口（Nemotron 8001、Step3-VL 8002、ComfyUI 8188），可用环境变量改：`CINELOOM_PLANNER_URL`、`CINELOOM_VISION_URL`、`COMFYUI_URL`。配置了 `STEPFUN_API_KEY` 时，文字审稿改由 StepFun 开放平台的 Step-3.7-Flash 承担，并在记录里标注 `cloud`；不配置则全程本地。
 
 **本地是默认，云端是可选。** 三条可选云端路线：视频（Seedance）、审稿（Step-3.7-Flash）、结构化评估（Jev）。 视频生成是本机的耗时瓶颈（14B 模型约 6 分钟一段）。设置 `ARK_API_KEY` 后，`--video-model seedance`（Studio 里同名选项）把生视频交给火山方舟的 Seedance 系列，首帧会离开本机，因此该素材在记录和看板里标为 `cloud`；设置 `STEPFUN_API_KEY` 则由 Step-3.7-Flash 承担审稿。两条云端路线都不影响默认的全本地流程。Seedance 路线的协议已用假服务测试通过（`tests/cloudvideo.test.ts`），尚未对真实服务验证。仓库里不含任何密钥。
+
+**配音（可选，用于广告旁白音色）。** 默认配音引擎 Kokoro 随下载脚本一起装好。样片使用的广告旁白音色需要再构建一个容器，并设计一次音色：
+
+```bash
+docker build -t cineloom/qwen-tts:local deploy/spark/qwen-tts
+docker run --rm --device nvidia.com/gpu=all -v "$PWD:/repo:ro" -v "${SPARK_MODEL_DIR:-$HOME/models}/tts:/models:ro" \
+  -v "$PWD/runtime-data/step-audio:/work" cineloom/qwen-tts:local \
+  /repo/scripts/voice-design.py --model /models/Qwen3-TTS-12Hz-1.7B-VoiceDesign --out /work/voices
+export CINELOOM_TTS_ENGINE=qwen-tts CINELOOM_TTS_REF_WAV=runtime-data/step-audio/voices/male-2.wav
+```
+
+`voice-design.py` 按文字描述生成男女各三个候选音色，`voices/voices.json` 记录了每个音色的参考文本，把它设为 `CINELOOM_TTS_REF_TEXT` 即可。
 
 这台机器上踩过的坑都已写进配置：Docker 通过 CDI（`nvidia.com/gpu=all`）而不是 `runtime: nvidia` 暴露 GPU；Step3-VL 的 FP8 权重要设 `VLLM_USE_DEEP_GEMM=0`；ComfyUI 镜像直接建在 vLLM 镜像上，复用已在 GB10 上验证过的 PyTorch。
 
@@ -308,7 +321,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 - **description 写触发条件，不写功能介绍。** 每条都包含“什么时候用”和用户会说的原话（如“能不能这么说”“拉片”），智能体靠它决定加载哪个 Skill。
 - **能确定的交给脚本，要判断的留给模型。** 广告法用词、切镜头、内存预算是确定性问题，由 `cineloom` 命令给出可复现的结果；是否有依据、怎么改写，才由模型判断。
 - **写明失败分支。** 每个 Skill 都有“出错了怎么办”：质检不过怎么改提示词、切镜结果只有一个镜头怎么调阈值、工作流被拒先跑 `doctor`。
-- **格式对齐 NVIDIA 官方 Skills 仓库。** frontmatter 带 `version`、`license`、`metadata`；每个 Skill 附 `evals/evals.json`（共 20 条任务，含正例和边界情况），用于“带 / 不带 Skill”的对比评测。
+- **格式对齐 NVIDIA 官方 Skills 仓库。** frontmatter 带 `version`、`license`、`metadata`；每个 Skill 附 `evals/evals.json`（共 29 条任务，含正例和边界情况），用于“带 / 不带 Skill”的对比评测。
 
 ## Agent Skills
 
@@ -321,7 +334,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | [`storyboard-design`](.agents/skills/storyboard-design/SKILL.md) | 分镜 | 产品只描述一次、风格行不带数字、画面无字、单镜单运镜、电影运镜语言 | Nemotron |
 | [`spark-local-media-generation`](.agents/skills/spark-local-media-generation/SKILL.md) | 生图 / 生视频 | 定妆图 → 参考图首帧（2 候选）→ 首帧驱动视频 | `cineloom image` / `video` · Qwen-Image(-Edit) · Wan2.2 14B |
 | [`shot-quality-gate`](.agents/skills/shot-quality-gate/SKILL.md) | 质检 | 对照定妆图：产品不符、多余文字、乱码、不该有的人手一票否决；按问题类型改提示词重生成 | `cineloom qa` · Step3-VL |
-| [`final-cut-assembly`](.agents/skills/final-cut-assembly/SKILL.md) | 成片 | 定版、真字体标题字幕（缺字即失败）、离线配音、本地音乐并自动压低、转场调色 | `cineloom cut` · ffmpeg · Kokoro · ACE-Step |
+| [`final-cut-assembly`](.agents/skills/final-cut-assembly/SKILL.md) | 成片 | 定版、真字体标题字幕（缺字即失败）、离线配音、本地音乐并自动压低、转场调色 | `cineloom cut` · ffmpeg · Qwen3-TTS / Kokoro · ACE-Step |
 | [`spark-model-scheduler`](.agents/skills/spark-model-scheduler/SKILL.md) | 贯穿 | 统一内存先量后排，分阶段加载释放 | `cineloom mem` |
 | [`cineloom-ad-film`](.agents/skills/cineloom-ad-film/SKILL.md) | 入口 | 供外部智能体（Claude Code、Codex 等）调用整条 Harness：一句创意到成片，读交付报告如实汇报 | `cineloom harness` |
 
@@ -352,7 +365,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4` | 导演智能体主模型：规划、工具调用、英文提示词 |
 | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark` | 为 DGX Spark 调优的投机解码草稿权重 |
 | NVFP4 量化（TensorRT Model Optimizer 产出的官方权重） | 降低权重体积与带宽压力 |
-| NVIDIA Container Toolkit · NGC PyTorch 容器（arm64） | GPU 容器运行时；ComfyUI 的基础镜像 |
+| NVIDIA Container Toolkit（CDI） | GPU 容器运行时：vLLM、ComfyUI 与两个配音容器都通过 `nvidia.com/gpu=all` 使用 GPU |
 | CUDA | vLLM 与 ComfyUI 的计算后端 |
 | [NVIDIA/skills](https://github.com/NVIDIA/skills) 规范 | Skill 的 frontmatter、`evals/`、评测报告格式对齐 |
 
@@ -412,7 +425,7 @@ src/agent/               CineLoom Harness：导演与子智能体、校验器、
 src/                     cineloom CLI、媒体管线与 Studio（TypeScript）
 workflows/               ComfyUI API 格式的工作流模板
 deploy/spark/            本地推理栈（compose）、Harness 提供方配置
-scripts/                 模型下载、一键启动
+scripts/                 模型下载、一键启动、音色设计、演示视频生成与录屏
 docs/                    架构图、开发日志、演示脚本、十日谈征文、B 站投稿材料
 eval/                    评测用创意与原始结果
 tests/                   单元测试与端到端流水线测试

@@ -330,7 +330,7 @@ def narrate_step_audio(narration: dict, work: Path) -> dict:
     lines = [{'text': text, 'output': inside(job / f'vo_{key}.wav')} for key, text in narration.items()]
     (job / 'jobs.json').write_text(json.dumps({'prompt_audio': inside(reference), 'prompt_text': os.environ['CINELOOM_TTS_REF_TEXT'], 'style': os.environ.get('CINELOOM_TTS_STYLE') or None, 'lines': lines}, ensure_ascii=False))
     if os.environ.get('CINELOOM_TTS_ENGINE') == 'qwen-tts':
-        sh('docker', 'run', '--rm', '--device', 'nvidia.com/gpu=all', '--ipc=host', '-v', f'{ROOT}:/repo:ro', '-v', '/home/orion/models/tts:/models:ro', '-v', f'{base}:/work',
+        sh('docker', 'run', '--rm', '--device', 'nvidia.com/gpu=all', '--ipc=host', '-v', f'{ROOT}:/repo:ro', '-v', f"{os.environ.get('SPARK_MODEL_DIR', os.path.expanduser('~/models'))}/tts:/models:ro", '-v', f'{base}:/work',
            'cineloom/qwen-tts:local', '/repo/scripts/qwen-clone.py', '--model', '/models/Qwen3-TTS-12Hz-1.7B-Base', '--jobs', inside(job / 'jobs.json'))
     else:
         sh('bash', str(ROOT / 'scripts/step-audio.sh'), 'batch', inside(job / 'jobs.json'))

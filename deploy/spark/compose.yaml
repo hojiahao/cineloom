@@ -34,7 +34,7 @@ services:
       HF_HOME: /models/hf
       HF_HUB_OFFLINE: "1"
     volumes:
-      - ${SPARK_MODEL_DIR:-/home/orion/models}:/models
+      - ${SPARK_MODEL_DIR:-${HOME}/models}:/models
     command:
       - --model=nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4
       - --served-model-name=nemotron-3.5-lightning
@@ -65,7 +65,7 @@ services:
       # DeepGEMM's FP8 kernels assert on GB10 ("Unknown SF transformation"); use vLLM's generic FP8 path.
       VLLM_USE_DEEP_GEMM: "0"
     volumes:
-      - ${SPARK_MODEL_DIR:-/home/orion/models}:/models
+      - ${SPARK_MODEL_DIR:-${HOME}/models}:/models
     command:
       - --model=stepfun-ai/Step3-VL-10B-FP8
       - --served-model-name=step3-vl-10b
@@ -91,7 +91,7 @@ services:
         PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
     image: cineloom/comfyui:local
     volumes:
-      - ${SPARK_MODEL_DIR:-/home/orion/models}/comfyui:/opt/ComfyUI/models
+      - ${SPARK_MODEL_DIR:-${HOME}/models}/comfyui:/opt/ComfyUI/models
       - ../../runtime-data/comfyui/output:/opt/ComfyUI/output
       - ../../runtime-data/comfyui/input:/opt/ComfyUI/input
     ports:

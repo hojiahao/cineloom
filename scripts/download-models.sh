@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Download every weight the Spark stack needs: ~38 GB LLMs, ~100 GB image/video, ~8 GB music, 0.4 GB voice.
+# Download every weight the Spark stack needs: ~38 GB LLMs, ~100 GB image/video, ~8 GB music, ~9 GB voice.
 # Safe to re-run: finished files are skipped and partial downloads resume.
 #   HF_ENDPOINT=https://hf-mirror.com scripts/download-models.sh     # mainland mirror
 set -uo pipefail
-MODELS="${SPARK_MODEL_DIR:-/home/orion/models}"
+MODELS="${SPARK_MODEL_DIR:-$HOME/models}"
 export HF_HOME="$MODELS/hf" HF_ENDPOINT="${HF_ENDPOINT:-https://huggingface.co}"
 command -v hf >/dev/null || { echo "Install the Hugging Face CLI first: pip install -U huggingface_hub" >&2; exit 1; }
 mkdir -p "$MODELS"/comfyui/{diffusion_models,text_encoders,vae,loras,checkpoints} "$MODELS/tts"
@@ -50,4 +50,10 @@ for file in config.json kokoro-v1_1-zh.pth voices/zf_001.pt voices/zm_010.pt; do
   [ -s "$TTS/$file" ] || retry curl -sL --fail -C - -o "$TTS/$file" "$HF_ENDPOINT/hexgrad/Kokoro-82M-v1.1-zh/resolve/main/$file"
 done
 [ -x runtime-data/tts-venv/bin/python ] || { python3 -m venv runtime-data/tts-venv && runtime-data/tts-venv/bin/pip install -q "kokoro>=0.8" "misaki[zh]" soundfile; }
+
+# Broadcast narrator voices (optional): Qwen3-TTS VoiceDesign designs a voice from a written description,
+# Base clones it line by line. Run in the cineloom/qwen-tts container (deploy/spark/qwen-tts).
+for repo in Qwen3-TTS-12Hz-1.7B-VoiceDesign Qwen3-TTS-12Hz-1.7B-Base; do
+  [ -s "$MODELS/tts/$repo/model.safetensors" ] || retry hf download "Qwen/$repo" --local-dir "$MODELS/tts/$repo" >/dev/null && echo "done Qwen/$repo"
+done
 du -sh "$MODELS/hf" "$MODELS/comfyui" "$MODELS/tts"
