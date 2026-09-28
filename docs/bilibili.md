@@ -1,0 +1,38 @@
+# B 站投稿材料（Demo 视频）
+
+- 视频文件：`~/cineloom-upload/cineloom-demo.mp4`（1920×1080，3 分 57 秒，由 `scripts/demo-reel.py` 从仓库产物生成）
+- 封面：`~/cineloom-upload/bilibili-cover.jpg`（1920×1080）
+- 分区：科技 → 人工智能
+- 类型：自制
+
+## 标题
+
+一句话生成一支广告片：在一台 DGX Spark 上跑通的广告工作室智能体｜CineLoom 影织
+
+## 简介
+
+CineLoom（影织）是方舟团队为第三届 NVIDIA DGX Spark 黑客松 · Agent Skills 开发挑战赛做的作品：你说一句创意，它交付一支画面、配音、音乐、字幕齐全且文案合规的短视频广告，全程在一台 DGX Spark 上生成。
+
+· 自研 CineLoom Harness：需求、脚本、合规、分镜、生图、质检、生视频、成片八个阶段，每个阶段一个加载 Agent Skill 的子智能体，代码管顺序和验收，模型管判断
+· NVIDIA Nemotron 3.5 Lightning（NVFP4 + DSpark 投机解码）写文案和提示词；StepFun Step3-VL 逐帧质检，Step-Audio-EditX 配音；Qwen-Image、Wan2.2 14B、ACE-Step 本地出图、出片、出配乐
+· 先出产品定妆图再出每一帧，整支片子是同一个产品；画面不让模型写字，字幕后期真字体排版；广告法用词扫描加独立审稿
+· 同一模型同一批创意，带 Skill 后分镜一次合格率从 0/16 提升到 8/14
+
+视频中的四支样片（饮料、数码、护肤、食品）和所有数字均为本机实测。
+开源仓库：https://github.com/hojiahao/cineloom
+
+## 分段章节
+
+00:00 CineLoom 影织
+00:06 做一条短视频广告，卡在哪里
+00:31 一句话开拍：Studio 与 CineLoom Harness
+00:49 真实运行记录回放
+01:20 先审后生成：文案过三道关
+01:41 定妆图与质检闭环
+02:04 四支成片
+03:29 证据：带与不带 Skill 的对比、实测耗时
+03:48 收尾
+
+## 标签
+
+NVIDIA, DGX Spark, 黑客松, Agent Skills, AI 智能体, AI 视频, 广告, Nemotron, 阶跃星辰, StepFun, ComfyUI, 开源
