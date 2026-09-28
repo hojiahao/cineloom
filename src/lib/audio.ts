@@ -27,8 +27,21 @@ export async function synthesizeVoice(text: string, output: string, maxSeconds: 
 export interface VoiceLine { text: string; output: string; maxSeconds: number }
 export interface VoiceResult { seconds: number; speed: number; model: string }
 
-/** Which offline voice engine the film uses: Kokoro (default) or StepFun's Step-Audio-EditX cloning a reference voice. */
-export const ttsEngine = (): 'kokoro' | 'step-audio' => (process.env.CINELOOM_TTS_ENGINE === 'step-audio' ? 'step-audio' : 'kokoro')
+/**
+ * Which offline voice engine the film uses: Kokoro (default), StepFun's Step-Audio-EditX, or Qwen3-TTS.
+ * The two cloning engines take one reference clip; the showcase uses a narrator voice designed from a
+ * written description with Qwen3-TTS VoiceDesign (scripts/voice-design.py), so no real person's voice is involved.
+ */
+export const ttsEngine = (): 'kokoro' | 'step-audio' | 'qwen-tts' => {
+  const engine = process.env.CINELOOM_TTS_ENGINE
+  return engine === 'step-audio' || engine === 'qwen-tts' ? engine : 'kokoro'
+}
+
+/**
+ * The chain a broadcast voiceover goes through: rumble cut, gentle compression for an even level,
+ * a little low-mid body and upper-mid presence so it sits in front of the music, then a limiter.
+ */
+export const BROADCAST_VOICE_CHAIN = 'highpass=f=70,acompressor=threshold=-22dB:ratio=3:attack=5:release=90:makeup=4,equalizer=f=180:t=q:w=1.2:g=2,equalizer=f=3200:t=q:w=1.4:g=3,alimiter=limit=0.9'
 
 /**
  * All voiceover lines of a film. Kokoro synthesises them one by one; Step-Audio-EditX loads its
@@ -37,7 +50,8 @@ export const ttsEngine = (): 'kokoro' | 'step-audio' => (process.env.CINELOOM_TT
  * that style. A line that overruns its slot is time-stretched, at most 1.25x, never cut.
  */
 export async function synthesizeVoices(lines: VoiceLine[]): Promise<VoiceResult[]> {
-  if (ttsEngine() !== 'step-audio') {
+  const engine = ttsEngine()
+  if (engine === 'kokoro') {
     const results: VoiceResult[] = []
     for (const line of lines) results.push({ ...(await synthesizeVoice(line.text, line.output, line.maxSeconds)), model: 'Kokoro-82M-v1.1-zh' })
     return results
@@ -45,7 +59,7 @@ export async function synthesizeVoices(lines: VoiceLine[]): Promise<VoiceResult[
   const work = resolve(process.env.CINELOOM_STEP_AUDIO_DIR ?? 'runtime-data/step-audio')
   const reference = resolve(process.env.CINELOOM_TTS_REF_WAV ?? '')
   const referenceText = process.env.CINELOOM_TTS_REF_TEXT ?? ''
-  if (!process.env.CINELOOM_TTS_REF_WAV || !referenceText) throw new Error('CINELOOM_TTS_ENGINE=step-audio needs CINELOOM_TTS_REF_WAV (a wav under runtime-data/step-audio/) and CINELOOM_TTS_REF_TEXT (what it says)')
+  if (!process.env.CINELOOM_TTS_REF_WAV || !referenceText) throw new Error(`CINELOOM_TTS_ENGINE=${engine} needs CINELOOM_TTS_REF_WAV (a wav under runtime-data/step-audio/) and CINELOOM_TTS_REF_TEXT (what it says)`)
   if (!reference.startsWith(`${work}/`)) throw new Error(`the reference voice must live under ${work} so the container can read it`)
   const inside = (path: string) => `/work/${relative(work, path)}`
   const jobDir = join(work, 'jobs', `${Date.now().toString(36)}`)
@@ -53,19 +67,24 @@ export async function synthesizeVoices(lines: VoiceLine[]): Promise<VoiceResult[
   const jobs = { prompt_audio: inside(reference), prompt_text: referenceText, style: process.env.CINELOOM_TTS_STYLE || null,
     lines: lines.map((line, index) => ({ text: line.text, output: inside(join(jobDir, `vo_${index + 1}.wav`)) })) }
   await writeFile(join(jobDir, 'jobs.json'), JSON.stringify(jobs, null, 2))
-  await exec('bash', [resolve(process.env.CINELOOM_STEP_AUDIO_SCRIPT ?? 'scripts/step-audio.sh'), 'batch', inside(join(jobDir, 'jobs.json'))])
+  if (engine === 'qwen-tts') {
+    await exec('docker', ['run', '--rm', '--device', 'nvidia.com/gpu=all', '--ipc=host', '-v', `${resolve('.')}:/repo:ro`, '-v', `${resolve(process.env.CINELOOM_TTS_MODEL_DIR ?? '/home/orion/models/tts')}:/models:ro`, '-v', `${work}:/work`,
+      process.env.CINELOOM_QWEN_TTS_IMAGE ?? 'cineloom/qwen-tts:local', '/repo/scripts/qwen-clone.py', '--model', '/models/Qwen3-TTS-12Hz-1.7B-Base', '--jobs', inside(join(jobDir, 'jobs.json'))])
+  } else await exec('bash', [resolve(process.env.CINELOOM_STEP_AUDIO_SCRIPT ?? 'scripts/step-audio.sh'), 'batch', inside(join(jobDir, 'jobs.json'))])
   const results: VoiceResult[] = []
   for (const [index, line] of lines.entries()) {
     const raw = join(jobDir, `vo_${index + 1}.wav`)
     await mkdir(dirname(line.output), { recursive: true })
-    let seconds = await probeDuration(raw)
-    let speed = 1
-    if (seconds > line.maxSeconds) {
-      speed = Math.min(1.25, seconds / line.maxSeconds)
-      await exec('ffmpeg', ['-y', '-v', 'error', '-i', raw, '-af', `atempo=${speed.toFixed(3)}`, line.output])
-      seconds = await probeDuration(line.output)
-    } else await copyFile(raw, line.output)
-    results.push({ seconds, speed, model: `Step-Audio-EditX${jobs.style ? ` (${jobs.style})` : ''}` })
+    // Trim leading and trailing silence first: the slot is for speech, not for the model's pauses.
+    const trimmed = join(jobDir, `vo_${index + 1}.trim.wav`)
+    await exec('ffmpeg', ['-y', '-v', 'error', '-i', raw, '-af', 'silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse', trimmed])
+    let seconds = await probeDuration(trimmed)
+    const speed = seconds > line.maxSeconds ? Math.min(1.25, seconds / line.maxSeconds) : 1
+    const chain = [speed > 1 ? `atempo=${speed.toFixed(3)}` : '', process.env.CINELOOM_VOICE_CHAIN === '0' ? '' : BROADCAST_VOICE_CHAIN].filter(Boolean).join(',')
+    if (chain) await exec('ffmpeg', ['-y', '-v', 'error', '-i', trimmed, '-af', chain, line.output])
+    else await copyFile(trimmed, line.output)
+    seconds = await probeDuration(line.output)
+    results.push({ seconds, speed, model: engine === 'qwen-tts' ? 'Qwen3-TTS-1.7B (designed voice)' : `Step-Audio-EditX${jobs.style ? ` (${jobs.style})` : ''}` })
   }
   return results
 }

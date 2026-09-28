@@ -329,10 +329,17 @@ def narrate_step_audio(narration: dict, work: Path) -> dict:
     reference = Path(os.environ['CINELOOM_TTS_REF_WAV']).resolve()
     lines = [{'text': text, 'output': inside(job / f'vo_{key}.wav')} for key, text in narration.items()]
     (job / 'jobs.json').write_text(json.dumps({'prompt_audio': inside(reference), 'prompt_text': os.environ['CINELOOM_TTS_REF_TEXT'], 'style': os.environ.get('CINELOOM_TTS_STYLE') or None, 'lines': lines}, ensure_ascii=False))
-    sh('bash', str(ROOT / 'scripts/step-audio.sh'), 'batch', inside(job / 'jobs.json'))
+    if os.environ.get('CINELOOM_TTS_ENGINE') == 'qwen-tts':
+        sh('docker', 'run', '--rm', '--device', 'nvidia.com/gpu=all', '--ipc=host', '-v', f'{ROOT}:/repo:ro', '-v', '/home/orion/models/tts:/models:ro', '-v', f'{base}:/work',
+           'cineloom/qwen-tts:local', '/repo/scripts/qwen-clone.py', '--model', '/models/Qwen3-TTS-12Hz-1.7B-Base', '--jobs', inside(job / 'jobs.json'))
+    else:
+        sh('bash', str(ROOT / 'scripts/step-audio.sh'), 'batch', inside(job / 'jobs.json'))
+    chain = 'highpass=f=70,acompressor=threshold=-22dB:ratio=3:attack=5:release=90:makeup=4,equalizer=f=180:t=q:w=1.2:g=2,equalizer=f=3200:t=q:w=1.4:g=3,alimiter=limit=0.9'
     voices = {}
     for key in narration:
-        out = work / f'vo_{key}.wav'; shutil.copy(job / f'vo_{key}.wav', out); voices[key] = (out, duration(out))
+        out = work / f'vo_{key}.wav'
+        sh('ffmpeg', '-y', '-v', 'error', '-i', str(job / f'vo_{key}.wav'), '-af', chain, str(out))
+        voices[key] = (out, duration(out))
     return voices
 
 
@@ -404,7 +411,7 @@ def main() -> int:
     logs = frames_log(cards, log_lines('show-soda'), '气泡水「冷」· 从创意到成片的每一步')
 
     voices = {}
-    if os.environ.get('CINELOOM_TTS_ENGINE') == 'step-audio':
+    if os.environ.get('CINELOOM_TTS_ENGINE') in ('step-audio', 'qwen-tts'):
         voices = narrate_step_audio(narration, work)
     else:
         for key, text in narration.items():
