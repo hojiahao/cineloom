@@ -372,7 +372,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | ComfyUI · Wan2.2 I2V A14B（FP8）+ lightx2v 4-step LoRA | 默认视频模型：首帧驱动的 5 秒片段 |
 | ComfyUI · Wan2.2 TI2V-5B | 备选视频模型，支持无首帧的文生视频 |
 | ffmpeg · libass | 参考片切镜、尾帧续接；成片的转场、调色、颗粒、暗角、真字体标题字幕与混音 |
-| Kokoro-82M-v1.1-zh | 离线中文配音（默认引擎；可切换为 StepFun Step-Audio-EditX 音色克隆） |
+| Kokoro-82M-v1.1-zh | 离线中文配音的默认引擎；它的合成音色也作为 Step-Audio-EditX 克隆的参考音 |
 | [Jev](https://docs.typesafe.ai/)（TypeSafe，云端 API，可选） | 结构化评估：对文案和分镜提出类型化问题，返回校准概率；`TYPESAFE_API_KEY` 存在时启用，只发送文本，记录标为 `cloud` |
 | ComfyUI · ACE-Step v1 3.5B | 本地生成器乐背景音乐 |
 | TypeScript · Node.js 22 · Vitest | CineLoom Harness、CLI、Studio 与测试（零运行时依赖） |
@@ -387,12 +387,12 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 - [x] 第一支端到端成片（旧流水线）：1453 秒；质检闭环真实触发 4 次重生成
 - [x] 新流水线：产品定妆图锁定、画面无字、严格质检、14B 视频模型、电影化后期
 - [x] Studio 工作台：网页提交创意、实时进度
-- [x] “带 / 不带 Skill”对比评测与两份 `BENCHMARK.md`
-- [x] 成片有声：本地中文配音（Kokoro）+ 本地生成的器乐（ACE-Step，实测 9 秒）+ 口播时自动压低音乐
+- [x] “带 / 不带 Skill”对比评测（三次，全部保留）与两份 `BENCHMARK.md`
+- [x] 成片有声：四支样片的口播由 StepFun Step-Audio-EditX 本地合成（从合成参考音克隆音色，再按 advertising 风格演绎；面霜用女声，其余男声），器乐由 ACE-Step 本地生成，口播时自动压低音乐
 - [x] 结尾定版、每镜头 2 个候选由质检选优、字幕字符校验与字体缺字检查
-- [x] 34 个测试通过：Harness 全流程用脚本化的模型服务和假 ComfyUI 验证，ffmpeg 为真
+- [x] 47 个测试通过：Harness 全流程用脚本化的模型服务和假 ComfyUI 验证，ffmpeg 为真
 - [x] 多行业案例片：饮料（竖版）、机械键盘（横版）、保湿面霜（竖版）、挂耳咖啡（横版）四支已入“成片展示”
-- [ ] 音效；配音音色与情绪的选择
+- [ ] 音效
 - [x] 每个项目自动生成交付报告 `reports/delivery.md`：逐镜头质检记录、各阶段实测、内存、生成位置与待确认事项
 - [x] 演示视频脚本（`docs/demo-script.md`）与“十日谈”征文草稿（`docs/essay-十日谈.md`）
 - [ ] 演示视频录制上传（B 站）与征文发布

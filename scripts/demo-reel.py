@@ -320,6 +320,22 @@ def narrate(text: str, path: Path, voice: str) -> float:
     return duration(path)
 
 
+def narrate_step_audio(narration: dict, work: Path) -> dict:
+    """All narration lines in one Step-Audio-EditX batch, cloned from CINELOOM_TTS_REF_WAV like the films' voiceover."""
+    base = ROOT / 'runtime-data/step-audio'
+    job = base / 'jobs' / f'reel-{os.getpid()}'
+    job.mkdir(parents=True, exist_ok=True)
+    inside = lambda path: '/work/' + str(Path(path).resolve().relative_to(base.resolve()))
+    reference = Path(os.environ['CINELOOM_TTS_REF_WAV']).resolve()
+    lines = [{'text': text, 'output': inside(job / f'vo_{key}.wav')} for key, text in narration.items()]
+    (job / 'jobs.json').write_text(json.dumps({'prompt_audio': inside(reference), 'prompt_text': os.environ['CINELOOM_TTS_REF_TEXT'], 'style': os.environ.get('CINELOOM_TTS_STYLE') or None, 'lines': lines}, ensure_ascii=False))
+    sh('bash', str(ROOT / 'scripts/step-audio.sh'), 'batch', inside(job / 'jobs.json'))
+    voices = {}
+    for key in narration:
+        out = work / f'vo_{key}.wav'; shutil.copy(job / f'vo_{key}.wav', out); voices[key] = (out, duration(out))
+    return voices
+
+
 ENCODE = ['-c:v', 'libx264', '-preset', 'medium', '-crf', '19', '-pix_fmt', 'yuv420p', '-r', '24', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2']
 
 
@@ -388,9 +404,12 @@ def main() -> int:
     logs = frames_log(cards, log_lines('show-soda'), '气泡水「冷」· 从创意到成片的每一步')
 
     voices = {}
-    for key, text in narration.items():
-        path = work / f'vo_{key}.wav'; voices[key] = (path, narrate(text, path, args.voice))
-        print(f'narration {key}: {voices[key][1]:.1f} s', file=sys.stderr)
+    if os.environ.get('CINELOOM_TTS_ENGINE') == 'step-audio':
+        voices = narrate_step_audio(narration, work)
+    else:
+        for key, text in narration.items():
+            path = work / f'vo_{key}.wav'; voices[key] = (path, narrate(text, path, args.voice))
+    for key in narration: print(f'narration {key}: {voices[key][1]:.1f} s', file=sys.stderr)
 
     parts: list[Path] = []
     def add(name: str, build) -> None:
