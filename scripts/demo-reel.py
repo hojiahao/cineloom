@@ -356,6 +356,18 @@ def segment_card(card: Path, narration: Path | None, seconds: float, out: Path) 
            '-vf', f'{fade},format=yuv420p', *ENCODE, str(out))
 
 
+def segment_agent_video(video: Path, narration: Path, seconds: float, out: Path) -> None:
+    """A screen recording of the agent session (any length), sped up to fill the segment."""
+    speed = max(1.0, duration(video) / (seconds - 0.5))
+    fontfile = str(FONT_DIR / 'NotoSansCJK-Regular.ttc')
+    label = 'DeepSeek Harness（本地 Nemotron）通过 cineloom-ad-film Skill 调用 CineLoom · 实录压缩播放'
+    vf = (f"[0:v]setpts=PTS/{speed:.4f},scale={W}:{H - 120}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:40:color=0x0e0f13,fps=24,"
+          f"drawtext=fontfile='{fontfile}':text='{label}':fontsize=30:fontcolor=0xd9b26a:x=(w-tw)/2:y=h-60,"
+          f"fade=t=in:st=0:d=0.6,fade=t=out:st={seconds - 0.6:.2f}:d=0.6,format=yuv420p[v];[1:a]adelay=600|600,apad[a]")
+    sh('ffmpeg', '-y', '-i', str(video), '-i', str(narration), '-t', f'{seconds:.2f}',
+       '-filter_complex', vf, '-map', '[v]', '-map', '[a]', *ENCODE, str(out))
+
+
 def segment_agent(rec: Path, narration: Path, seconds: float, out: Path, work: Path) -> None:
     """The recorded agent session (scripts/record-agent.sh): terminal frames as a time-lapse."""
     frames = sorted((rec / 'frames').glob('*.png'))
@@ -366,7 +378,7 @@ def segment_agent(rec: Path, narration: Path, seconds: float, out: Path, work: P
         handle.write(f"file '{frames[-1]}'\n")
     fontfile = str(FONT_DIR / 'NotoSansCJK-Regular.ttc')
     vf = (f"[0:v]scale={W}:{H - 120}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:40:color=0x0e0f13,fps=24,"
-          f"drawtext=fontfile='{fontfile}':text='Claude Code 通过 cineloom-ad-film Skill 调用 CineLoom · 实录压缩播放':fontsize=30:fontcolor=0xd9b26a:x=(w-tw)/2:y=h-60,"
+          f"drawtext=fontfile='{fontfile}':text='DeepSeek Harness（本地 Nemotron）通过 cineloom-ad-film Skill 调用 CineLoom · 实录压缩播放':fontsize=30:fontcolor=0xd9b26a:x=(w-tw)/2:y=h-60,"
           f"fade=t=in:st=0:d=0.6,fade=t=out:st={seconds - 0.6:.2f}:d=0.6,format=yuv420p[v];[1:a]adelay=600|600,apad[a]")
     sh('ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', str(listing), '-i', str(narration), '-t', f'{seconds:.2f}',
        '-filter_complex', vf, '-map', '[v]', '-map', '[a]', *ENCODE, str(out))
@@ -433,11 +445,11 @@ def main() -> int:
     narration = {
         'title': 'CineLoom，影织。把一句创意，织成一支成片。',
         'pain': '做一条短视频广告，要过策划、文案、分镜、生成、剪辑。现有工具把这些放在云端：未发布新品的素材不能上传；一个镜头重生成五次是常态，按次计费劝退；生成结果没人把关，一句全网第一、一个变形的标志，到成片才发现。',
-        'studio': 'CineLoom 跑在一台 DGX Spark 上。你说一句创意，CineLoom Harness 按八个阶段推进，每个阶段是一个加载了 Skill 的子智能体。代码管顺序和验收，模型管判断。',
-        'live': '这是一次真实的操作录屏。在工作台输入一句创意，点开拍。智能体依次写需求、写脚本、审合规、画分镜，定妆图过了质检，每个镜头的首帧逐一生成、逐一复核，三段视频在本机生成，最后自动剪成片。整个过程约三十五分钟，这里压缩成了几十秒。',
+        'studio': 'CineLoom 跑在一台 DGX Spark 上。一句创意，有两种方式交给它：在网页工作台里直接开拍，或者让任何支持 Agent Skills 的智能体通过 Skill 来调用。背后都是同一个 CineLoom Harness：八个阶段，每个阶段一个加载了 Skill 的子智能体，代码管顺序和验收，模型管判断。',
+        'live': '第一种方式：网页工作台。输入创意，点开拍。智能体依次写需求、写脚本、审合规、画分镜，定妆图过了质检，每个镜头的首帧逐一生成、逐一复核，三段视频在本机生成，最后自动剪成片。整个过程约三十五分钟，这里压缩成了四十秒。',
         'review': '文案先过广告法用词扫描，再过一个没写这份稿的审稿智能体，还有 Jev 的语义判读。有问题的文案到不了生成环节。这是咖啡那支的第一稿，提神、清醒这类功效声称被退回，第二稿只写香气和口感，才放行。',
         'qa': '产品先出一张过质检的定妆图，之后每一帧都从它生成，所以整支片子里是同一只罐。每一帧由 StepFun 的视觉模型对照定妆图复核：镜头一的候选因为罐子没立起来被拒，改提示词重生成后通过。返工拦在二十秒的生图阶段，而不是六分钟的生视频阶段。',
-        'agent': '同一条流水线也能被别的智能体调用。这是在 Claude Code 里用一句话提需求：它按描述加载 CineLoom 的入口 Skill，检查三个模型服务都在线、没有别的片子在跑，然后启动 Harness，边跑边汇报进度，最后读交付报告，把成片位置、每个镜头的质检结果和遗留问题如实告诉你。',
+        'agent': '第二种方式：在 DeepSeek Harness 里，大脑是本机的 NVIDIA Nemotron。用一句话提需求，它按描述加载 CineLoom 的入口 Skill，检查模型服务、启动 Harness、汇报进度，最后读交付报告，把成片位置、每个镜头的质检结果和遗留问题如实告诉你。',
         'evidence': f"一支十五秒成片在这台机器上约 {soda['wall'] / 60:.0f} 分钟，全程本地。同一个模型、同一批创意，不带 Skill 时分镜一次合格 {ablation['withoutSkills']['storyboardCleanFirstTry'].replace('/', ' 比 ')}，带 Skill 后 {ablation['withSkills']['storyboardCleanFirstTry'].replace('/', ' 比 ')}；每条规则都对应一次真实的翻车。",
         'closing': 'CineLoom，影织。代码在 GitHub 公开，欢迎在你的 DGX Spark 上开拍。',
     }
@@ -460,12 +472,14 @@ def main() -> int:
     add('title', lambda p: segment_card(cards / 'title.png', voices['title'][0], hold('title', 6), p))
     add('pain', lambda p: segment_card(cards / 'pain.png', voices['pain'][0], hold('pain', 8), p))
     add('studio', lambda p: segment_card(cards / 'studio.png', voices['studio'][0], hold('studio', 8), p))
-    agent_rec = Path.home() / 'cineloom-demo/agent-rec'
-    if (agent_rec / 'frames').is_dir() and any((agent_rec / 'frames').glob('*.png')) and 'agent' in voices:
-        add('agent', lambda p: segment_agent(agent_rec, voices['agent'][0], max(42.0, voices['agent'][1] + 2), p, work))
     rec = Path.home() / 'cineloom-demo/studio-rec'
     if (rec / 'run-composed').is_dir() and 'live' in voices:
         add('live', lambda p: segment_recording(rec, voices['live'][0], max(40.0, voices['live'][1] + 2), p, work))
+    agent_rec = Path.home() / 'cineloom-demo/agent-rec'
+    if (agent_rec / 'recording.mp4').exists() and 'agent' in voices:
+        add('agent', lambda p: segment_agent_video(agent_rec / 'recording.mp4', voices['agent'][0], max(42.0, voices['agent'][1] + 2), p))
+    elif (agent_rec / 'frames').is_dir() and any((agent_rec / 'frames').glob('*.png')) and 'agent' in voices:
+        add('agent', lambda p: segment_agent(agent_rec, voices['agent'][0], max(42.0, voices['agent'][1] + 2), p, work))
     add('review', lambda p: segment_card(cards / 'review.png', voices['review'][0], hold('review', 10), p))
     add('qa', lambda p: segment_card(cards / 'qa.png', voices['qa'][0], hold('qa', 10), p))
     for index, spec in enumerate(films):
