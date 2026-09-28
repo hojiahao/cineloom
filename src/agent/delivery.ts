@@ -29,7 +29,7 @@ export async function writeDeliveryReport(dir: string, brief: Brief, script: Scr
     return `| ${shot.shot} | ${shot.framing} · ${shot.camera} | ${attempts.length} | ${best ? `${best.pass ? 'pass' : 'kept after fail'} ${best.score}` : '-'} | ${frameSeconds.toFixed(1)} s | ${seconds(clip?.seconds)} |`
   }).join('\n')
   const stageSeconds = (stage: string) => rows.filter((row) => row.stage === stage && typeof row.seconds === 'number').reduce((sum, row) => sum + (row.seconds as number), 0)
-  const memory = rows.filter((row) => row.agent === 'scheduler').map((row) => `| ${row.phase} | ${row.availableBeforeGb} GB | ${row.availableAfterFreeGb} GB |`).join('\n')
+  const memory = rows.filter((row) => row.agent === 'scheduler' && typeof row.availableBeforeGb === 'number').map((row) => `| ${row.phase} | ${row.availableBeforeGb} GB | ${row.availableAfterFreeGb} GB |`).join('\n')
   const audio = rows.filter((row) => row.agent === 'voiceover' || row.agent === 'music')
   const report = `# 交付报告 · ${brief.title}
 
