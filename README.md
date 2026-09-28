@@ -7,11 +7,12 @@
   <img alt="Node 22+" src="https://img.shields.io/badge/node-%E2%89%A5%2022-5fa04e">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178c6">
   <img alt="Platform" src="https://img.shields.io/badge/platform-NVIDIA%20DGX%20Spark%20(GB10%20%C2%B7%20aarch64)-76b900">
-  <img alt="Agent Skills" src="https://img.shields.io/badge/Agent%20Skills-9-d9b26a">
+  <img alt="Agent Skills" src="https://img.shields.io/badge/Agent%20Skills-10-d9b26a">
   <img alt="Agents" src="https://img.shields.io/badge/agents-CineLoom%20Harness-4d6bfe">
 </p>
 
 <p align="center">
+  <a href="http://39.108.138.218:2211/"><b>在线体验</b></a> ·
   <a href="#成片展示">成片展示</a> ·
   <a href="#项目说明">项目说明</a> ·
   <a href="#快速开始">快速开始</a> ·
@@ -213,7 +214,7 @@ git clone git@github.com:hojiahao/cineloom.git && cd cineloom
 npm install && npm run build
 npm test                      # 34 个测试：工具链端到端与 CineLoom Harness 端到端
 
-node dist/cli.js studio       # 打开 http://127.0.0.1:3090 ，输入创意，点“开拍”
+node dist/cli.js studio       # 本机打开 http://127.0.0.1:3090 ，输入创意，点“开拍”（在线体验版见下文 Studio 一节）
 node dist/cli.js harness "给一款叫“冷”的无糖气泡水做一条 15 秒竖版广告，面向大学生"   # 或者用命令行
 ```
 
@@ -340,7 +341,24 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 
 ## Studio
 
-`node dist/cli.js studio` 在 `http://127.0.0.1:3090` 提供工作台：输入创意、选画幅时长和视频模型、点“开拍”，导演就在后台开工（一次只拍一支，GPU 只有一块）。页面实时显示运行日志、八个阶段的状态、按镜头排列的首帧和片段、每个素材的生成位置与实测耗时、成片播放，以及统一内存占用条。
+Studio 是 CineLoom 的网页工作台：输入创意、选画幅时长和视频模型、点“开拍”，导演就在后台开工（一次只拍一支，GPU 只有一块）。页面实时显示运行日志、八个阶段的状态、按镜头排列的首帧和片段、每个素材的生成位置与实测耗时、成片播放，以及统一内存占用条。
+
+**在线体验：<http://39.108.138.218:2211/>**
+
+这是方舟团队那台 DGX Spark 上正在运行的工作台，经阿里云服务器转发到公网，评委和访客都可以直接打开。可以浏览四支样片从创意到成片的全过程，播放成片，查看交付报告与运行记录；也可以提交新创意，约 35 分钟出片，同一时间只能拍一支。
+
+**自己部署时的地址**
+
+在自己的 DGX Spark 上按“快速开始”装好后，工作台地址取决于从哪里访问：
+
+| 从哪里访问 | 启动命令 | 浏览器地址 |
+|---|---|---|
+| 就在这台 Spark 上 | `node dist/cli.js studio` | `http://127.0.0.1:3090` |
+| 局域网或公网里的其他电脑 | `node dist/cli.js studio --host 0.0.0.0` | `http://<这台 Spark 的 IP>:3090` |
+
+对局域网以外开放前，建议设置环境变量 `CINELOOM_STUDIO_TOKEN`：设置后，提交创意需要带上这个令牌，浏览不受影响。
+
+所有地址都支持录制模式：在地址后加 `?record=1`，页面只显示最近的一支片子，适合录屏或投屏展示。
 
 ## 技术栈说明
 
@@ -373,7 +391,8 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | ComfyUI · Wan2.2 I2V A14B（FP8）+ lightx2v 4-step LoRA | 默认视频模型：首帧驱动的 5 秒片段 |
 | ComfyUI · Wan2.2 TI2V-5B | 备选视频模型，支持无首帧的文生视频 |
 | ffmpeg · libass | 参考片切镜、尾帧续接；成片的转场、调色、颗粒、暗角、真字体标题字幕与混音 |
-| Kokoro-82M-v1.1-zh | 离线中文配音的默认引擎；它的合成音色也作为 Step-Audio-EditX 克隆的参考音 |
+| Qwen3-TTS-12Hz-1.7B VoiceDesign / Base（本地，容器 `cineloom/qwen-tts`） | 样片与演示片的配音：VoiceDesign 按文字描述设计出不存在的旁白音色（`scripts/voice-design.py`），Base 用这段参考音逐句克隆，再过广播级后期链（压缩、提亮、限幅）。`CINELOOM_TTS_ENGINE=qwen-tts` 启用 |
+| Kokoro-82M-v1.1-zh | 离线中文配音的默认引擎，无需额外容器 |
 | [Jev](https://docs.typesafe.ai/)（TypeSafe，云端 API，可选） | 结构化评估：对文案和分镜提出类型化问题，返回校准概率；`TYPESAFE_API_KEY` 存在时启用，只发送文本，记录标为 `cloud` |
 | ComfyUI · ACE-Step v1 3.5B | 本地生成器乐背景音乐 |
 | TypeScript · Node.js 22 · Vitest | CineLoom Harness、CLI、Studio 与测试（零运行时依赖） |
@@ -389,13 +408,14 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 - [x] 新流水线：产品定妆图锁定、画面无字、严格质检、14B 视频模型、电影化后期
 - [x] Studio 工作台：网页提交创意、实时进度
 - [x] “带 / 不带 Skill”对比评测（三次，全部保留）与两份 `BENCHMARK.md`
-- [x] 成片有声：四支样片的口播由 StepFun Step-Audio-EditX 本地合成（从合成参考音克隆音色，再按 advertising 风格演绎；面霜用女声，其余男声），器乐由 ACE-Step 本地生成，口播时自动压低音乐
+- [x] 成片有声：四支样片的口播用 Qwen3-TTS 设计的旁白音色本地合成（面霜女声，其余男声），并经广播级后期处理；器乐由 ACE-Step 本地生成，口播时自动压低音乐。Step-Audio-EditX 作为可选配音引擎保留
 - [x] 结尾定版、每镜头 2 个候选由质检选优、字幕字符校验与字体缺字检查
 - [x] 47 个测试通过：Harness 全流程用脚本化的模型服务和假 ComfyUI 验证，ffmpeg 为真
 - [x] 多行业案例片：饮料（竖版）、机械键盘（横版）、保湿面霜（竖版）、挂耳咖啡（横版）四支已入“成片展示”
 - [ ] 音效
 - [x] 每个项目自动生成交付报告 `reports/delivery.md`：逐镜头质检记录、各阶段实测、内存、生成位置与待确认事项
-- [x] 演示视频（`scripts/demo-reel.py` 自动生成，投稿材料见 `docs/bilibili.md`）与“十日谈”征文定稿（`docs/essay-十日谈.md`）
+- [x] 演示视频（`scripts/demo-reel.py` 自动生成，含一段真实操作录屏；投稿材料见 `docs/bilibili.md`）与“十日谈”征文定稿（`docs/essay-十日谈.md`）
+- [x] Studio 在线体验：<http://39.108.138.218:2211/>
 - [ ] 演示视频录制上传（B 站）与征文发布
 
 本仓库不会出现未经实测的性能数字。
@@ -404,17 +424,17 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 
 ```text
 AGENTS.md                导演智能体的流水线与规则
-.agents/skills/          9 个 Agent Skill（SKILL.md · references · evals）
+.agents/skills/          10 个 Agent Skill（9 个阶段 Skill + 1 个入口 Skill；SKILL.md · references · evals）
 src/agent/               CineLoom Harness：导演与子智能体、校验器、评测
 src/                     cineloom CLI、媒体管线与 Studio（TypeScript）
 workflows/               ComfyUI API 格式的工作流模板
 deploy/spark/            本地推理栈（compose）、Harness 提供方配置
 scripts/                 模型下载、一键启动
-docs/                    架构图、开发日志、演示脚本、征文草稿
+docs/                    架构图、开发日志、演示脚本、十日谈征文、B 站投稿材料
 eval/                    评测用创意与原始结果
 tests/                   单元测试与端到端流水线测试
 ```
 
 ## 致谢与许可
 
-CineLoom 以 [MIT 许可证](LICENSE) 发布，版权归方舟团队所有。运行时依赖 vLLM、ComfyUI，以及 NVIDIA、StepFun、Qwen、Wan 团队开源的模型，各自遵循其许可证。用 CineLoom 生成并对外发布的内容，请按平台规范标注“AI 生成”。
+CineLoom 以 [MIT 许可证](LICENSE) 发布，版权归方舟团队所有。运行时依赖 vLLM、ComfyUI，以及 NVIDIA、StepFun、Qwen、Wan 团队开源的模型，各自遵循其许可证。用 CineLoom 生成并对外发布的内容，请按平台规范标注“AI 生成”。样片中的品牌均为虚构，配音音色由模型按文字描述生成，不取自任何真人。
