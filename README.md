@@ -405,6 +405,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 - **可追溯。** 每个项目自动生成交付报告 `reports/delivery.md`，内容包括逐镜头质检记录、各阶段实测、内存和生成位置，以及待确认事项。
 - **可评测。** “带 / 不带 Skill”对比评测做了三次，结果全部保留，另有两份 `BENCHMARK.md`；47 个自动化测试，其中 Harness 全流程测试使用真实 ffmpeg。
 - **Studio 工作台。** 网页提交创意，实时查看进度与每个素材。
+- **可被其他智能体调用。** 入口 Skill `cineloom-ad-film` 已在 DeepSeek Harness 中实测：由本机 NVIDIA Nemotron 驱动，只给“工作区内修改”权限，一句需求即可加载 Skill、启动 Harness、失败时自行重试，最后读交付报告作答（演示视频 1:34 起）。
 - **演示材料。** 演示视频由 `scripts/demo-reel.py` 从仓库产物自动生成，含一段真实操作录屏；开发过程记录在 `docs/development-log.md` 和“十日谈”征文 `docs/ten-day-essay.md`。
 
 **已知局限**
