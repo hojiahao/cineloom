@@ -1,6 +1,6 @@
 # 演示视频（B 站 Demo）
 
-成片：1920×1080，4 分 36 秒，有旁白。由 `scripts/demo-reel.py` 从仓库自己的产物生成：运行记录、被拒与通过的首帧、四支样片、消融评测结果和一段真实操作录屏。画面上的所有数字都从 `projects/*/reports` 与 `eval/results` 读取，不手工填写。样片或数据变化后，重跑一次即可重出。
+成片：1920×1080，不超过 5 分钟（生成脚本会拒绝超过 300 秒的结果），有旁白。由 `scripts/demo-reel.py` 从仓库自己的产物生成：运行记录、被拒与通过的首帧、四支样片、消融评测结果和一段真实操作录屏。画面上的所有数字都从 `projects/*/reports` 与 `eval/results` 读取，不手工填写。样片或数据变化后，重跑一次即可重出。
 
 ```bash
 # 旁白音色与样片相同（见 README“部署说明”中的配音一节）
@@ -26,4 +26,4 @@ python3 scripts/demo-reel.py --out ~/cineloom-demo/cineloom-demo.mp4
 | 4:08 | 证据 | 带 / 不带 Skill 的对比表；一支片子的实测耗时与内存 | 每条规则都对应一次真实的翻车 |
 | 4:26 | 收尾 | 架构图与仓库地址 | 代码在 GitHub 公开 |
 
-B 站投稿的标题、简介、章节与标签见 [`bilibili.md`](bilibili.md)。
+B 站投稿的标题、简介、章节与标签见 [`demo-video-bilibili.md`](demo-video-bilibili.md)。
