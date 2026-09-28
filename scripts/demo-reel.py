@@ -356,6 +356,26 @@ def segment_card(card: Path, narration: Path | None, seconds: float, out: Path) 
            '-vf', f'{fade},format=yuv420p', *ENCODE, str(out))
 
 
+def segment_recording(rec: Path, narration: Path, seconds: float, out: Path, work: Path) -> None:
+    """The recorded Studio session: typing frames at their own pace, then the run as a time-lapse filling the rest."""
+    typed = sorted((rec / 'typing-composed').glob('*.jpg'))
+    run = sorted((rec / 'run-composed').glob('*.jpg'))
+    typing_seconds = 0.3 * len(typed)
+    per_run = max(0.12, (seconds - typing_seconds - 2.5) / max(1, len(run)))
+    listing = work / 'recording.txt'
+    with open(listing, 'w') as handle:
+        for frame in typed: handle.write(f"file '{frame}'\nduration 0.300\n")
+        for index, frame in enumerate(run): handle.write(f"file '{frame}'\nduration {per_run + (2.5 if index == len(run) - 1 else 0):.3f}\n")
+        handle.write(f"file '{run[-1]}'\n")
+    fontfile = str(FONT_DIR / 'NotoSansCJK-Regular.ttc')
+    label = '实时录屏 · 约 35 分钟压缩播放'
+    vf = (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x0e0f13,fps=24,"
+          f"drawtext=fontfile='{fontfile}':text='{label}':fontsize=30:fontcolor=0xd9b26a:x=w-tw-60:y=h-70,"
+          f"fade=t=in:st=0:d=0.6,fade=t=out:st={seconds - 0.6:.2f}:d=0.6,format=yuv420p[v];[1:a]adelay=600|600,apad[a]")
+    sh('ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', str(listing), '-i', str(narration), '-t', f'{seconds:.2f}',
+       '-filter_complex', vf, '-map', '[v]', '-map', '[a]', *ENCODE, str(out))
+
+
 def segment_slides(frames: list[Path], per_frame: float, narration: Path | None, seconds: float, out: Path, work: Path) -> None:
     listing = work / 'slides.txt'
     hold = max(0.0, seconds - per_frame * len(frames))
@@ -398,6 +418,7 @@ def main() -> int:
         'title': 'CineLoom，影织。把一句创意，织成一支成片。',
         'pain': '做一条短视频广告，要过策划、文案、分镜、生成、剪辑。现有工具把这些放在云端：未发布新品的素材不能上传；一个镜头重生成五次是常态，按次计费劝退；生成结果没人把关，一句全网第一、一个变形的标志，到成片才发现。',
         'studio': 'CineLoom 跑在一台 DGX Spark 上。你说一句创意，CineLoom Harness 按八个阶段推进，每个阶段是一个加载了 Skill 的子智能体。代码管顺序和验收，模型管判断。',
+        'live': '这是一次真实的操作录屏。在工作台输入一句创意，点开拍。智能体依次写需求、写脚本、审合规、画分镜，定妆图过了质检，每个镜头的首帧逐一生成、逐一复核，三段视频在本机生成，最后自动剪成片。整个过程约三十五分钟，这里压缩成了几十秒。',
         'log': '这是气泡水那支片子的真实运行记录。脚本、合规、分镜各自过校验，定妆图先过质检，每个镜头两个候选，被拒的候选带着原因重生成，三段视频在本机生成，最后成片。',
         'review': '文案先过广告法用词扫描，再过一个没写这份稿的审稿智能体，还有 Jev 的语义判读。有问题的文案到不了生成环节。这是咖啡那支的第一稿，提神、清醒这类功效声称被退回，第二稿只写香气和口感，才放行。',
         'qa': '产品先出一张过质检的定妆图，之后每一帧都从它生成，所以整支片子里是同一只罐。每一帧由 StepFun 的视觉模型对照定妆图复核：镜头一的候选因为罐子没立起来被拒，改提示词重生成后通过。返工拦在二十秒的生图阶段，而不是六分钟的生视频阶段。',
@@ -425,6 +446,9 @@ def main() -> int:
     add('title', lambda p: segment_card(cards / 'title.png', voices['title'][0], hold('title', 6), p))
     add('pain', lambda p: segment_card(cards / 'pain.png', voices['pain'][0], hold('pain', 8), p))
     add('studio', lambda p: segment_card(cards / 'studio.png', voices['studio'][0], hold('studio', 8), p))
+    rec = Path.home() / 'cineloom-demo/studio-rec'
+    if (rec / 'run-composed').is_dir() and 'live' in voices:
+        add('live', lambda p: segment_recording(rec, voices['live'][0], max(40.0, voices['live'][1] + 2), p, work))
     add('log', lambda p: segment_slides(logs, 1.1, voices['log'][0], max(1.1 * len(logs) + 2, voices['log'][1] + 1.6), p, work))
     add('review', lambda p: segment_card(cards / 'review.png', voices['review'][0], hold('review', 10), p))
     add('qa', lambda p: segment_card(cards / 'qa.png', voices['qa'][0], hold('qa', 10), p))

@@ -66,25 +66,33 @@
 <script>
 const STAGE_NAMES = { brief:'需求', script:'脚本', compliance:'合规', storyboard:'分镜', frames:'生图', qa:'质检', clips:'生视频', cut:'成片' }
 const esc = (text) => String(text ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]))
+// Recording mode (?record=1): only the most recent project, images load at once, and a clip is shown by its
+// first frame (headless browsers used for screen capture cannot play H.264).
+const RECORD = new URLSearchParams(location.search).has('record')
+if (RECORD && location.hash) document.getElementById('app').innerHTML = ''
 const fileUrl = (id, path) => '/files/' + encodeURIComponent(id) + '/' + path.split('/').map(encodeURIComponent).join('/')
 
 function assetCard(project, asset) {
   const url = fileUrl(project.id, asset.path)
-  const media = asset.kind === 'video' ? `<video src="${url}" controls preload="metadata"></video>` : `<img src="${url}" loading="lazy" alt="">`
+  const still = RECORD && asset.kind === 'video' ? project.assets.find((a) => a.kind === 'image' && a.shot === asset.shot && a.stage === 'frames') : undefined
+  const media = asset.kind === 'video' && !RECORD ? `<video src="${url}" controls preload="metadata"></video>`
+    : asset.kind === 'video' ? (still ? `<img src="${fileUrl(project.id, still.path)}" alt="">` : '<img alt="">')
+    : `<img src="${url}" ${RECORD ? '' : 'loading="lazy"'} alt="">`
   const where = asset.execution === 'cloud' ? '<span class="tag cloud">云端</span>' : '<span class="tag">Spark 本地</span>'
   const time = asset.seconds ? ` · ${asset.seconds.toFixed(1)}s` : ''
   return `<figure>${media}<figcaption><b>${asset.shot ? '镜头 ' + asset.shot : esc(asset.id)}</b> ${where}<br>${esc(asset.model ?? '')}${time}</figcaption></figure>`
 }
 
 function render(projects) {
-  if (projects.length === 0) return '<div class="empty">还没有项目。让 Agent 执行 <code>cineloom project init</code> 开始。</div>'
+  if (RECORD) projects = location.hash ? [] : projects.slice(0, 1)
+  if (projects.length === 0) return RECORD ? '' : '<div class="empty">还没有项目。让 Agent 执行 <code>cineloom project init</code> 开始。</div>'
   return projects.map((project) => {
     const stages = Object.entries(project.stages).map(([key, stage]) => `<span class="stage ${stage.status}" title="${esc(stage.note)}">${STAGE_NAMES[key] ?? key}</span>`).join('')
     const final = project.assets.find((asset) => asset.id === 'final-cut')
     const shots = project.assets.filter((asset) => asset.id !== 'final-cut' && asset.kind !== 'document').sort((a, b) => (a.shot ?? 0) - (b.shot ?? 0) || a.kind.localeCompare(b.kind))
     return `<section class="project"><h2>${esc(project.title)}</h2><p class="brief">${esc(project.brief)} · ${esc(project.ratio)} · ${project.durationSeconds}s</p>
       <div class="stages">${stages}</div><div class="grid ${project.ratio === '16:9' ? 'wide' : project.ratio === '1:1' ? 'square' : ''}">${shots.map((asset) => assetCard(project, asset)).join('')}</div>
-      ${final ? `<div class="final"><h3>成片</h3><video src="${fileUrl(project.id, final.path)}" controls></video><p><a href="${fileUrl(project.id, 'reports/delivery.md')}" target="_blank">交付报告</a> · <a href="${fileUrl(project.id, 'script/script.json')}" target="_blank">脚本</a> · <a href="${fileUrl(project.id, 'storyboard/storyboard.json')}" target="_blank">分镜</a> · <a href="${fileUrl(project.id, 'reports/run.jsonl')}" target="_blank">运行记录</a></p></div>` : ''}</section>`
+      ${final && !RECORD ? `<div class="final"><h3>成片</h3><video src="${fileUrl(project.id, final.path)}" controls></video><p><a href="${fileUrl(project.id, 'reports/delivery.md')}" target="_blank">交付报告</a> · <a href="${fileUrl(project.id, 'script/script.json')}" target="_blank">脚本</a> · <a href="${fileUrl(project.id, 'storyboard/storyboard.json')}" target="_blank">分镜</a> · <a href="${fileUrl(project.id, 'reports/run.jsonl')}" target="_blank">运行记录</a></p></div>` : ''}</section>`
   }).join('')
 }
 
@@ -93,7 +101,7 @@ async function refreshJob() {
   const running = job?.status === 'running'
   document.getElementById('go').disabled = running
   document.getElementById('go').textContent = running ? '制作中…' : '开拍'
-  if (!job) return
+  if (!job || (RECORD && location.hash)) return
   const lines = job.log.map((line) => esc(line).replace(/▸ (\S+)/, '▸ <b>$1</b>')).join('\n')
   const tail = job.status === 'failed' ? `\n<span class="err">失败：${esc(job.error)}</span>` : job.status === 'done' ? '\n完成 ✓' : ''
   const box = document.getElementById('job')

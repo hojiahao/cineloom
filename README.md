@@ -202,7 +202,7 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 设计取舍：
 
 - **Harness 分阶段推进，而不是放任模型自由循环。** 广告成片本来就是流水线；把顺序和验收交给代码，稳定、可测，“带 / 不带 Skill”的对比也能用同一套校验器打分。
-- **Skill 是开放格式，不绑定运行时。** 九个 Skill 通过 `cineloom` 子命令做事，输入输出都是文件和 JSON。CineLoom Harness 是自带的运行框架；同一批 Skill 也能被 Claude Code、Codex、DeepSeek Harness 等支持 Agent Skills 的客户端直接加载。
+- **Skill 是开放格式，不绑定运行时。** 十个 Skill（九个阶段 Skill 加一个入口 Skill）通过 `cineloom` 子命令做事，输入输出都是文件和 JSON。CineLoom Harness 是自带的运行框架；同一批 Skill 也能被 Claude Code、Codex、DeepSeek Harness 等支持 Agent Skills 的客户端直接加载。
 - **模型按实测分工，不按想象分工。** Nemotron 关掉思考后 0.3 秒就能给出结构化结果，适合规划、文案、审稿和英文提示词；Step3-VL-10B 关不掉思考、约 18 token/秒，做长文本审稿会超时，但看图质检只要 10 秒左右——所以它只负责“看”。
 - **记录即界面。** Studio 只读 `projects/` 目录里的记录，不持有状态。
 
@@ -323,6 +323,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | [`shot-quality-gate`](.agents/skills/shot-quality-gate/SKILL.md) | 质检 | 对照定妆图：产品不符、多余文字、乱码、不该有的人手一票否决；按问题类型改提示词重生成 | `cineloom qa` · Step3-VL |
 | [`final-cut-assembly`](.agents/skills/final-cut-assembly/SKILL.md) | 成片 | 定版、真字体标题字幕（缺字即失败）、离线配音、本地音乐并自动压低、转场调色 | `cineloom cut` · ffmpeg · Kokoro · ACE-Step |
 | [`spark-model-scheduler`](.agents/skills/spark-model-scheduler/SKILL.md) | 贯穿 | 统一内存先量后排，分阶段加载释放 | `cineloom mem` |
+| [`cineloom-ad-film`](.agents/skills/cineloom-ad-film/SKILL.md) | 入口 | 供外部智能体（Claude Code、Codex 等）调用整条 Harness：一句创意到成片，读交付报告如实汇报 | `cineloom harness` |
 
 ### 带 Skill 和不带 Skill 的差别
 
