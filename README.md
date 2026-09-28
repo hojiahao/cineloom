@@ -60,7 +60,7 @@
 
 <!-- video:soda-9x16 -->
 
-https://github.com/user-attachments/assets/495bebb6-a63a-409f-8290-4b5b3d02419a
+https://github.com/user-attachments/assets/72049dbb-34f5-4777-a0ce-d45e601e162e
 
 <details>
 <summary>创意原话、四格画面、定妆图与这次运行的记录</summary>
@@ -87,7 +87,7 @@ https://github.com/user-attachments/assets/495bebb6-a63a-409f-8290-4b5b3d02419a
 
 <!-- video:keyboard-16x9 -->
 
-https://github.com/user-attachments/assets/4fc7c49e-2b62-447b-9dc5-388c5ae32f51
+https://github.com/user-attachments/assets/0afa0258-2c17-4b0c-b67c-c9be5902d0cc
 
 <details>
 <summary>创意原话、四格画面、定妆图与这次运行的记录</summary>
@@ -115,7 +115,7 @@ https://github.com/user-attachments/assets/4fc7c49e-2b62-447b-9dc5-388c5ae32f51
 
 <!-- video:cream-9x16 -->
 
-https://github.com/user-attachments/assets/75d58be9-b411-43e6-86cd-f8a1a04694ea
+https://github.com/user-attachments/assets/85ea4ee3-bf6a-4908-850d-a8dcecc19774
 
 <details>
 <summary>规格、创意原话、四格画面、定妆图与这次运行的记录</summary>
@@ -143,7 +143,7 @@ https://github.com/user-attachments/assets/75d58be9-b411-43e6-86cd-f8a1a04694ea
 
 <!-- video:coffee-16x9 -->
 
-https://github.com/user-attachments/assets/765932f6-cdcc-4564-a5f8-996a543eea74
+https://github.com/user-attachments/assets/e726d094-b557-4999-8dcc-1f0d6348ff77
 
 <details>
 <summary>创意原话、四格画面、定妆图与这次运行的记录</summary>
