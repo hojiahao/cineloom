@@ -180,7 +180,7 @@ https://github.com/user-attachments/assets/e726d094-b557-4999-8dcc-1f0d6348ff77
 - **按条计费让迭代变贵。** 广告要反复改，一个镜头重生成五次是常态，云端视频生成按次收费，试错成本直接劝退。
 - **生成结果没人把关。** 文案里一句“全网第一”、画面里一个变形的 logo，到了成片阶段才发现，整条重做。
 
-### CineLoom 怎么做
+### 核心亮点与技术实现
 
 CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专业判断写成 **Agent Skill**：
 
@@ -192,7 +192,7 @@ CineLoom 把整条流水线搬到一台 DGX Spark 上，并把每个环节的专
 - **一个内存池里排兵布阵。** GB10 的 CPU 和 GPU 共用约 121 GB 统一内存。两个 LLM 常驻；Harness 在每个阶段切换时释放上一阶段的扩散模型，再加载下一个。
 - **过程对人可见。** [Studio](#studio) 里输入创意、点“开拍”，实时看到每个阶段、每帧的质检结论、每个素材的生成位置和耗时，以及统一内存占用。
 
-### 架构
+### 架构设计
 
 <p align="center">
   <img src="docs/assets/architecture.png" alt="CineLoom 系统架构：创作者 → CineLoom Harness（导演智能体与子智能体）→ Agent Skills → cineloom CLI → projects 记录 → Studio；Nemotron、Step3-VL、ComfyUI 均在 DGX Spark 本地" width="760">
@@ -362,7 +362,7 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 | 组件 | 用途 |
 |---|---|
 | DGX Spark（GB10 Grace Blackwell，aarch64，统一内存） | 全部推理与生成的运行平台 |
-| `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4` | 导演智能体主模型：规划、工具调用、英文提示词 |
+| `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4` | **每一支片子都在用**：需求、文案、审稿、分镜与英文提示词；也是 DeepSeek Harness 调用 CineLoom 时的驱动模型 |
 | `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark` | 为 DGX Spark 调优的投机解码草稿权重 |
 | NVFP4 量化（TensorRT Model Optimizer 产出的官方权重） | 降低权重体积与带宽压力 |
 | NVIDIA Container Toolkit（CDI） | GPU 容器运行时：vLLM、ComfyUI 与两个配音容器都通过 `nvidia.com/gpu=all` 使用 GPU |
@@ -373,9 +373,9 @@ Nemotron 默认先推理再作答，推理内容计入 `max_tokens`；给得太�
 
 | 组件 | 用途 |
 |---|---|
-| `stepfun-ai/Step3-VL-10B-FP8`（本地，vLLM） | 视觉质检：定妆图与每一帧对照复核；参考片逐镜理解 |
-| Step-3.7-Flash（StepFun 开放平台 API，可选） | 创意总监级的方案发散。198B 参数，IQ4_XS 量化仍需约 116 GB，无法与扩散模型同机共存，因此走云端并在记录里标注 `cloud` |
-| `stepfun-ai/Step-Audio-EditX`（本地，容器 `cineloom/step-audio`，可选配音引擎） | 3B 的音频编辑模型：从一段参考音克隆音色，再按 `advertising` 等风格重新演绎口播。`CINELOOM_TTS_ENGINE=step-audio` 启用，参考音与参考文本由 `CINELOOM_TTS_REF_WAV` / `CINELOOM_TTS_REF_TEXT` 指定，`CINELOOM_TTS_STYLE` 可选；一支片的口播一次装载模型批量合成（`scripts/step-audio.sh batch`）。在 vLLM 0.27 与 transformers 5 上需要两处本地补丁（`deploy/spark/step-audio/apply-patches.sh`：注意力后端、chat 模板返回值） |
+| `stepfun-ai/Step3-VL-10B-FP8`（本地，vLLM） | **每一支片子都在用**：定妆图与每一帧对照复核（质检），参考片逐镜理解 |
+| Step-3.7-Flash（StepFun 开放平台 API，可选，样片未使用） | 创意总监级的方案发散。198B 参数，IQ4_XS 量化仍需约 116 GB，无法与扩散模型同机共存，因此走云端并在记录里标注 `cloud` |
+| `stepfun-ai/Step-Audio-EditX`（本地，容器 `cineloom/step-audio`，可选配音引擎，最终样片未使用） | 3B 的音频编辑模型：从一段参考音克隆音色，再按 `advertising` 等风格重新演绎口播。`CINELOOM_TTS_ENGINE=step-audio` 启用，参考音与参考文本由 `CINELOOM_TTS_REF_WAV` / `CINELOOM_TTS_REF_TEXT` 指定，`CINELOOM_TTS_STYLE` 可选；一支片的口播一次装载模型批量合成（`scripts/step-audio.sh batch`）。在 vLLM 0.27 与 transformers 5 上需要两处本地补丁（`deploy/spark/step-audio/apply-patches.sh`：注意力后端、chat 模板返回值） |
 
 **其他开源组件**
 
